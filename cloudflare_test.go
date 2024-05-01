@@ -2,13 +2,13 @@ package cloudflare
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
+	"github.com/goccy/go-json"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,6 +21,12 @@ var (
 
 	// server is a test HTTP server used to provide mock API responses.
 	server *httptest.Server
+
+	// testAccountRC is a test account resource container.
+	testAccountRC = AccountIdentifier(testAccountID)
+
+	// testZoneRC is a test zone resource container.
+	testZoneRC = ZoneIdentifier(testZoneID)
 )
 
 func setup(opts ...Option) {
@@ -175,7 +181,7 @@ func TestClient_RetryCanSucceedAfterErrors(t *testing.T) {
                 "page": 1,
                 "per_page": 20,
                 "count": 1,
-                "total_count": 2000
+                "total_count": 1
             }
         }`)
 		}
@@ -352,7 +358,7 @@ func TestZoneIDByNameWithNonUniqueZonesWithoutOrgID(t *testing.T) {
 }
 
 func TestZoneIDByNameWithIDN(t *testing.T) {
-	setup(UsingAccount("01a7362d577a6c3019a474fd6f485823"))
+	setup()
 	defer teardown()
 
 	handler := func(w http.ResponseWriter, r *http.Request) {
@@ -475,7 +481,7 @@ func TestErrorFromResponseWithUnmarshalingError(t *testing.T) {
 
 	mux.HandleFunc("/accounts/01a7362d577a6c3019a474fd6f485823/access/apps", handler)
 
-	_, err := client.CreateAccessApplication(context.Background(), "01a7362d577a6c3019a474fd6f485823", AccessApplication{
+	_, err := client.CreateAccessApplication(context.Background(), AccountIdentifier("01a7362d577a6c3019a474fd6f485823"), CreateAccessApplicationParams{
 		Name:            "Admin Site",
 		Domain:          "test.example.com/admin",
 		SessionDuration: "24h",

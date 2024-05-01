@@ -53,6 +53,24 @@ func TestTeamsRules(t *testing.T) {
                     "insecure_disable_dnssec_validation": false,
 					"untrusted_cert": {
 						"action": "error"
+					},
+					"dns_resolvers": {
+						"ipv4": [
+							{"ip": "10.0.0.2", "port": 5053},
+							{
+								"ip": "192.168.0.2",
+								"vnet_id": "16fd7a32-11f0-4687-a0bb-7031d241e184",
+								"route_through_private_network": true
+							}
+						],
+						"ipv6": [
+							{"ip": "2460::1"}
+						]
+					},
+					"notification_settings": {
+						"enabled": true,
+						"msg": "message",
+						"support_url": "https://hello.com"
 					}
 				  }
 				},
@@ -84,7 +102,8 @@ func TestTeamsRules(t *testing.T) {
                     "insecure_disable_dnssec_validation": true,
 					"untrusted_cert": {
 						"action": "pass_through"
-					}
+					},
+					"resolve_dns_through_cloudflare": true
 				  }
 				}
 			]
@@ -123,6 +142,35 @@ func TestTeamsRules(t *testing.T) {
 			UntrustedCertSettings: &UntrustedCertSettings{
 				Action: UntrustedCertError,
 			},
+			DnsResolverSettings: &TeamsDnsResolverSettings{
+				V4Resolvers: []TeamsDnsResolverAddressV4{
+					{
+						TeamsDnsResolverAddress{
+							IP:   "10.0.0.2",
+							Port: IntPtr(5053),
+						},
+					},
+					{
+						TeamsDnsResolverAddress{
+							IP:                         "192.168.0.2",
+							VnetID:                     "16fd7a32-11f0-4687-a0bb-7031d241e184",
+							RouteThroughPrivateNetwork: BoolPtr(true),
+						},
+					},
+				},
+				V6Resolvers: []TeamsDnsResolverAddressV6{
+					{
+						TeamsDnsResolverAddress{
+							IP: "2460::1",
+						},
+					},
+				},
+			},
+			NotificationSettings: &TeamsNotificationSettings{
+				Enabled:    BoolPtr(true),
+				Message:    "message",
+				SupportURL: "https://hello.com",
+			},
 		},
 		CreatedAt: &createdAt,
 		UpdatedAt: &updatedAt,
@@ -154,6 +202,7 @@ func TestTeamsRules(t *testing.T) {
 				UntrustedCertSettings: &UntrustedCertSettings{
 					Action: UntrustedCertPassthrough,
 				},
+				ResolveDnsThroughCloudflare: BoolPtr(true),
 			},
 			CreatedAt: &createdAt,
 			UpdatedAt: &updatedAt,
@@ -470,6 +519,75 @@ func TestTeamsCreateL4Rule(t *testing.T) {
 			AuditSSH: &AuditSSHRuleSettings{
 				CommandLogging: true,
 			},
+		},
+		DeletedAt: nil,
+	}
+
+	mux.HandleFunc("/accounts/"+testAccountID+"/gateway/rules", handler)
+
+	actual, err := client.TeamsCreateRule(context.Background(), testAccountID, want)
+
+	if assert.NoError(t, err) {
+		assert.Equal(t, want, actual)
+	}
+}
+
+func TestTeamsCreateResolverPolicy(t *testing.T) {
+	setup()
+	defer teardown()
+
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodPost, r.Method, "Expected method 'POST', got %s", r.Method)
+		w.Header().Set("content-type", "application/json")
+		fmt.Fprintf(w, `{
+			"success": true,
+			"errors": [],
+			"messages": [],
+			"result": {
+				"name": "resolve 4.4.4.4",
+				"description": "rule description",
+				"precedence": 1000,
+				"enabled": true,
+				"action": "resolve",
+				"filters": [
+					"dns_resolver"
+				],
+				"traffic": "any(dns.domains[*] == \"scottstots.com\")",
+				"identity": "",
+				"rule_settings": {
+					"audit_ssh": { "command_logging": true },
+					"resolve_dns_through_cloudflare": true
+				}
+			}
+		}
+		`)
+	}
+
+	want := TeamsRule{
+		Name:          "resolve 4.4.4.4",
+		Description:   "rule description",
+		Precedence:    1000,
+		Enabled:       true,
+		Action:        Resolve,
+		Filters:       []TeamsFilterType{DnsResolverFilter},
+		Traffic:       `any(dns.domains[*] == "scottstots.com")`,
+		Identity:      "",
+		DevicePosture: "",
+		RuleSettings: TeamsRuleSettings{
+			BlockPageEnabled:                false,
+			BlockReason:                     "",
+			OverrideIPs:                     nil,
+			OverrideHost:                    "",
+			L4Override:                      nil,
+			AddHeaders:                      nil,
+			BISOAdminControls:               nil,
+			CheckSession:                    nil,
+			InsecureDisableDNSSECValidation: false,
+			EgressSettings:                  nil,
+			AuditSSH: &AuditSSHRuleSettings{
+				CommandLogging: true,
+			},
+			ResolveDnsThroughCloudflare: BoolPtr(true),
 		},
 		DeletedAt: nil,
 	}

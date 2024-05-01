@@ -2,10 +2,11 @@ package cloudflare
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/goccy/go-json"
 )
 
 type EmailRoutingDestinationAddress struct {
@@ -92,10 +93,9 @@ func (api *API) CreateEmailRoutingDestinationAddress(ctx context.Context, rc *Re
 	}
 
 	uri := fmt.Sprintf("/accounts/%s/email/routing/addresses", rc.Identifier)
-
 	res, err := api.makeRequestContext(ctx, http.MethodPost, uri, params)
 	if err != nil {
-		return EmailRoutingDestinationAddress{}, ErrMissingAccountID
+		return EmailRoutingDestinationAddress{}, err
 	}
 
 	var r CreateEmailRoutingAddressResponse
@@ -119,7 +119,7 @@ func (api *API) GetEmailRoutingDestinationAddress(ctx context.Context, rc *Resou
 
 	res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
 	if err != nil {
-		return EmailRoutingDestinationAddress{}, ErrMissingAccountID
+		return EmailRoutingDestinationAddress{}, err
 	}
 
 	var r CreateEmailRoutingAddressResponse
@@ -143,7 +143,7 @@ func (api *API) DeleteEmailRoutingDestinationAddress(ctx context.Context, rc *Re
 
 	res, err := api.makeRequestContext(ctx, http.MethodDelete, uri, nil)
 	if err != nil {
-		return EmailRoutingDestinationAddress{}, ErrMissingAccountID
+		return EmailRoutingDestinationAddress{}, err
 	}
 
 	var r CreateEmailRoutingAddressResponse

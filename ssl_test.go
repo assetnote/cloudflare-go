@@ -64,7 +64,7 @@ func TestCreateSSL(t *testing.T) {
 		Signature:       "SHA256WithRSA",
 		Status:          "active",
 		BundleMethod:    "ubiquitous",
-		GeoRestrictions: ZoneCustomSSLGeoRestrictions{Label: "us"},
+		GeoRestrictions: &ZoneCustomSSLGeoRestrictions{Label: "us"},
 		ZoneID:          "023e105f4ecef8ad9ca31a8372d0c353",
 		UploadedOn:      uploadedOn,
 		ModifiedOn:      modifiedOn,
@@ -119,7 +119,7 @@ func TestListSSL(t *testing.T) {
             "page": 1,
             "per_page": 20,
             "count": 1,
-            "total_count": 2000
+            "total_count": 1
           }
         }`)
 	}
@@ -266,7 +266,7 @@ func TestUpdateSSL(t *testing.T) {
 		Signature:       "SHA256WithRSA",
 		Status:          "active",
 		BundleMethod:    "ubiquitous",
-		GeoRestrictions: ZoneCustomSSLGeoRestrictions{Label: "us"},
+		GeoRestrictions: &ZoneCustomSSLGeoRestrictions{Label: "us"},
 		ZoneID:          "023e105f4ecef8ad9ca31a8372d0c353",
 		UploadedOn:      uploadedOn,
 		ModifiedOn:      modifiedOn,
@@ -330,7 +330,7 @@ func TestReprioritizeSSL(t *testing.T) {
             "page": 1,
             "per_page": 20,
             "count": 1,
-            "total_count": 2000
+            "total_count": 1
           }
         }`)
 	}

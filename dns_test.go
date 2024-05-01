@@ -2,12 +2,12 @@ package cloudflare
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"testing"
 	"time"
 
+	"github.com/goccy/go-json"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -98,7 +98,6 @@ func TestCreateDNSRecord(t *testing.T) {
 				"proxiable": true,
 				"proxied": false,
 				"ttl": 120,
-				"locked": false,
 				"zone_id": "d56084adb405e0b7e32c52321bf07be6",
 				"zone_name": "example.com",
 				"created_on": "2014-01-01T05:20:00Z",
@@ -116,26 +115,23 @@ func TestCreateDNSRecord(t *testing.T) {
 
 	createdOn, _ := time.Parse(time.RFC3339, "2014-01-01T05:20:00Z")
 	modifiedOn, _ := time.Parse(time.RFC3339, "2014-01-01T05:20:00Z")
-	want := &DNSRecordResponse{
-		Result: DNSRecord{
-			ID:         "372e67954025e0ba6aaa6d586b9e0b59",
-			Type:       asciiInput.Type,
-			Name:       asciiInput.Name,
-			Content:    asciiInput.Content,
-			Proxiable:  true,
-			Proxied:    asciiInput.Proxied,
-			TTL:        asciiInput.TTL,
-			ZoneID:     testZoneID,
-			ZoneName:   "example.com",
-			CreatedOn:  createdOn,
-			ModifiedOn: modifiedOn,
-			Data:       map[string]interface{}{},
-			Meta: map[string]interface{}{
-				"auto_added": true,
-				"source":     "primary",
-			},
+	want := DNSRecord{
+		ID:         "372e67954025e0ba6aaa6d586b9e0b59",
+		Type:       asciiInput.Type,
+		Name:       asciiInput.Name,
+		Content:    asciiInput.Content,
+		Proxiable:  true,
+		Proxied:    asciiInput.Proxied,
+		TTL:        asciiInput.TTL,
+		ZoneID:     testZoneID,
+		ZoneName:   "example.com",
+		CreatedOn:  createdOn,
+		ModifiedOn: modifiedOn,
+		Data:       map[string]interface{}{},
+		Meta: map[string]interface{}{
+			"auto_added": true,
+			"source":     "primary",
 		},
-		Response: Response{Success: true, Errors: []ResponseInfo{}, Messages: []ResponseInfo{}},
 	}
 
 	_, err := client.CreateDNSRecord(context.Background(), ZoneIdentifier(""), CreateDNSRecordParams{})
@@ -183,7 +179,6 @@ func TestListDNSRecords(t *testing.T) {
 					"proxiable": true,
 					"proxied": false,
 					"ttl": 120,
-					"locked": false,
 					"zone_id": "d56084adb405e0b7e32c52321bf07be6",
 					"zone_name": "example.com",
 					"created_on": "2014-01-01T05:20:00Z",
@@ -199,7 +194,7 @@ func TestListDNSRecords(t *testing.T) {
 				"count": 1,
 				"page": 1,
 				"per_page": 20,
-				"total_count": 2000
+				"total_count": 1
 			}
 		}`)
 	}
@@ -217,7 +212,6 @@ func TestListDNSRecords(t *testing.T) {
 		Proxiable:  true,
 		Proxied:    &proxied,
 		TTL:        120,
-		Locked:     false,
 		ZoneID:     testZoneID,
 		ZoneName:   "example.com",
 		CreatedOn:  createdOn,
@@ -278,7 +272,6 @@ func TestListDNSRecordsSearch(t *testing.T) {
 					"proxiable": true,
 					"proxied": true,
 					"ttl": 120,
-					"locked": false,
 					"zone_id": "d56084adb405e0b7e32c52321bf07be6",
 					"zone_name": "example.com",
 					"created_on": "2014-01-01T05:20:00Z",
@@ -295,7 +288,7 @@ func TestListDNSRecordsSearch(t *testing.T) {
 				"count": 1,
 				"page": 1,
 				"per_page": 20,
-				"total_count": 2000
+				"total_count": 1
 			}
 		}`)
 	}
@@ -313,7 +306,6 @@ func TestListDNSRecordsSearch(t *testing.T) {
 		Proxiable:  true,
 		Proxied:    &proxied,
 		TTL:        120,
-		Locked:     false,
 		ZoneID:     testZoneID,
 		ZoneName:   "example.com",
 		CreatedOn:  createdOn,
@@ -340,7 +332,7 @@ func TestListDNSRecordsSearch(t *testing.T) {
 		Tags:      []string{"tag1", "tag2"},
 	})
 	require.NoError(t, err)
-	assert.Equal(t, 2000, resultInfo.Total)
+	assert.Equal(t, 1, resultInfo.Total)
 
 	assert.Equal(t, want, actual)
 }
@@ -411,7 +403,6 @@ func TestListDNSRecordsPagination(t *testing.T) {
 		assert.Equal(t, expected["proxiable"].(bool), actualRecord.Proxiable)
 		assert.Equal(t, expected["proxied"].(bool), *actualRecord.Proxied)
 		assert.Equal(t, int(expected["ttl"].(float64)), actualRecord.TTL)
-		assert.Equal(t, expected["locked"].(bool), actualRecord.Locked)
 		assert.Equal(t, expected["zone_id"].(string), actualRecord.ZoneID)
 		assert.Equal(t, expected["zone_name"].(string), actualRecord.ZoneName)
 		assert.Equal(t, expected["data"], actualRecord.Data)
@@ -439,7 +430,6 @@ func TestGetDNSRecord(t *testing.T) {
 				"proxiable": true,
 				"proxied": false,
 				"ttl": 120,
-				"locked": false,
 				"zone_id": "d56084adb405e0b7e32c52321bf07be6",
 				"zone_name": "example.com",
 				"created_on": "2014-01-01T05:20:00Z",
@@ -531,7 +521,6 @@ func TestUpdateDNSRecord(t *testing.T) {
 				"proxiable": true,
 				"proxied": false,
 				"ttl": 120,
-				"locked": false,
 				"zone_id": "d56084adb405e0b7e32c52321bf07be6",
 				"zone_name": "example.com",
 				"created_on": "2014-01-01T05:20:00Z",
@@ -549,13 +538,13 @@ func TestUpdateDNSRecord(t *testing.T) {
 
 	mux.HandleFunc("/zones/"+testZoneID+"/dns_records/"+dnsRecordID, handler)
 
-	err := client.UpdateDNSRecord(context.Background(), ZoneIdentifier(""), UpdateDNSRecordParams{ID: dnsRecordID})
+	_, err := client.UpdateDNSRecord(context.Background(), ZoneIdentifier(""), UpdateDNSRecordParams{ID: dnsRecordID})
 	assert.ErrorIs(t, err, ErrMissingZoneID)
 
-	err = client.UpdateDNSRecord(context.Background(), ZoneIdentifier(testZoneID), UpdateDNSRecordParams{})
+	_, err = client.UpdateDNSRecord(context.Background(), ZoneIdentifier(testZoneID), UpdateDNSRecordParams{})
 	assert.ErrorIs(t, err, ErrMissingDNSRecordID)
 
-	err = client.UpdateDNSRecord(context.Background(), ZoneIdentifier(testZoneID), UpdateDNSRecordParams{
+	_, err = client.UpdateDNSRecord(context.Background(), ZoneIdentifier(testZoneID), UpdateDNSRecordParams{
 		ID:      dnsRecordID,
 		Type:    "A",
 		Name:    "😺.example.com",
@@ -597,7 +586,6 @@ func TestUpdateDNSRecord_ClearComment(t *testing.T) {
 				"proxiable": true,
 				"proxied": false,
 				"ttl": 120,
-				"locked": false,
 				"zone_id": "d56084adb405e0b7e32c52321bf07be6",
 				"zone_name": "example.com",
 				"created_on": "2014-01-01T05:20:00Z",
@@ -617,9 +605,64 @@ func TestUpdateDNSRecord_ClearComment(t *testing.T) {
 
 	mux.HandleFunc("/zones/"+testZoneID+"/dns_records/"+dnsRecordID, handler)
 
-	err := client.UpdateDNSRecord(context.Background(), ZoneIdentifier(testZoneID), UpdateDNSRecordParams{
+	_, err := client.UpdateDNSRecord(context.Background(), ZoneIdentifier(testZoneID), UpdateDNSRecordParams{
 		ID:      dnsRecordID,
-		Comment: "",
+		Comment: StringPtr(""),
+	})
+	require.NoError(t, err)
+}
+
+func TestUpdateDNSRecord_KeepComment(t *testing.T) {
+	setup()
+	defer teardown()
+
+	input := DNSRecord{
+		ID: "372e67954025e0ba6aaa6d586b9e0b59",
+	}
+
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodPatch, r.Method, "Expected method 'PATCH', got %s", r.Method)
+
+		var v DNSRecord
+		err := json.NewDecoder(r.Body).Decode(&v)
+		require.NoError(t, err)
+		v.ID = "372e67954025e0ba6aaa6d586b9e0b59"
+		assert.Equal(t, input, v)
+
+		w.Header().Set("content-type", "application/json")
+		fmt.Fprint(w, `{
+			"success": true,
+			"errors": [],
+			"messages": [],
+			"result": {
+				"id": "372e67954025e0ba6aaa6d586b9e0b59",
+				"type": "A",
+				"name": "example.com",
+				"content": "198.51.100.4",
+				"proxiable": true,
+				"proxied": false,
+				"ttl": 120,
+				"zone_id": "d56084adb405e0b7e32c52321bf07be6",
+				"zone_name": "example.com",
+				"created_on": "2014-01-01T05:20:00Z",
+				"modified_on": "2014-01-01T05:20:00Z",
+				"comment":null,
+				"tags":[],
+				"data": {},
+				"meta": {
+					"auto_added": true,
+					"source": "primary"
+				}
+			}
+		}`)
+	}
+
+	dnsRecordID := "372e67954025e0ba6aaa6d586b9e0b59"
+
+	mux.HandleFunc("/zones/"+testZoneID+"/dns_records/"+dnsRecordID, handler)
+
+	_, err := client.UpdateDNSRecord(context.Background(), ZoneIdentifier(testZoneID), UpdateDNSRecordParams{
+		ID: dnsRecordID,
 	})
 	require.NoError(t, err)
 }

@@ -47,7 +47,8 @@ func TestCreateLoadBalancerPool(t *testing.T) {
                       "Host": [
                           "example.com"
                       ]
-                  }
+                  },
+			      "virtual_network_id":"a5624d4e-044a-4ff0-b3e1-e2465353d4b4"
                 }
               ],
               "notification_email": "someone@example.com",
@@ -90,13 +91,15 @@ func TestCreateLoadBalancerPool(t *testing.T) {
                       "Host": [
                           "example.com"
                       ]
-                  }
+                  },
+			      "virtual_network_id":"a5624d4e-044a-4ff0-b3e1-e2465353d4b4"
                 }
               ],
               "notification_email": "someone@example.com",
               "check_regions": [
                 "WEU"
-              ]
+              ],
+			  "healthy": true
             }
         }`)
 	}
@@ -115,7 +118,7 @@ func TestCreateLoadBalancerPool(t *testing.T) {
 		Description:    "Primary data center - Provider XYZ",
 		Name:           "primary-dc-1",
 		Enabled:        true,
-		MinimumOrigins: 1,
+		MinimumOrigins: IntPtr(1),
 		Monitor:        "f1aba936b94213e5b8dca0c0dbf1f9cc",
 		Latitude:       fptr(55),
 		Longitude:      fptr(-12.5),
@@ -137,12 +140,14 @@ func TestCreateLoadBalancerPool(t *testing.T) {
 				Header: map[string][]string{
 					"Host": {"example.com"},
 				},
+				VirtualNetworkID: "a5624d4e-044a-4ff0-b3e1-e2465353d4b4",
 			},
 		},
 		NotificationEmail: "someone@example.com",
 		CheckRegions: []string{
 			"WEU",
 		},
+		Healthy: BoolPtr(true),
 	}
 	request := LoadBalancerPool{
 		Description: "Primary data center - Provider XYZ",
@@ -169,12 +174,78 @@ func TestCreateLoadBalancerPool(t *testing.T) {
 				Header: map[string][]string{
 					"Host": {"example.com"},
 				},
+				VirtualNetworkID: "a5624d4e-044a-4ff0-b3e1-e2465353d4b4",
 			},
 		},
 		NotificationEmail: "someone@example.com",
 		CheckRegions: []string{
 			"WEU",
 		},
+	}
+
+	actual, err := client.CreateLoadBalancerPool(context.Background(), AccountIdentifier(testAccountID), CreateLoadBalancerPoolParams{LoadBalancerPool: request})
+	if assert.NoError(t, err) {
+		assert.Equal(t, want, actual)
+	}
+}
+
+func TestCreateLoadBalancerPool_MinimumOriginsZero(t *testing.T) {
+	setup()
+	defer teardown()
+
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodPost, r.Method, "Expected method 'POST', got %s", r.Method)
+		w.Header().Set("content-type", "application/json")
+		b, err := io.ReadAll(r.Body)
+		defer r.Body.Close()
+		if assert.NoError(t, err) {
+			assert.JSONEq(t, `{
+              "description": "Primary data center - Provider XYZ",
+              "name": "primary-dc-2",
+              "minimum_origins": 0,
+              "enabled": true,
+              "check_regions": null,
+              "origins": null
+            }`, string(b))
+		}
+		fmt.Fprint(w, `{
+            "success": true,
+            "errors": [],
+            "messages": [],
+            "result": {
+              "description": "Primary data center - Provider XYZ",
+              "created_on": "2014-01-01T05:20:00.12345Z",
+              "modified_on": "2014-02-01T05:20:00.12345Z",
+              "id": "f6fea70e5154b4c563bd549ef405b7d7",
+              "enabled": true,
+              "minimum_origins": 0,
+              "name": "primary-dc-2",
+              "notification_email": "",
+              "check_regions": null,
+              "origins": []
+            }
+        }`)
+	}
+
+	mux.HandleFunc("/accounts/"+testAccountID+"/load_balancers/pools", handler)
+	createdOn, _ := time.Parse(time.RFC3339, "2014-01-01T05:20:00.12345Z")
+	modifiedOn, _ := time.Parse(time.RFC3339, "2014-02-01T05:20:00.12345Z")
+	want := LoadBalancerPool{
+		ID:                "f6fea70e5154b4c563bd549ef405b7d7",
+		CreatedOn:         &createdOn,
+		ModifiedOn:        &modifiedOn,
+		Description:       "Primary data center - Provider XYZ",
+		Name:              "primary-dc-2",
+		Enabled:           true,
+		MinimumOrigins:    IntPtr(0),
+		Origins:           []LoadBalancerOrigin{},
+		NotificationEmail: "",
+	}
+	request := LoadBalancerPool{
+		Description:    "Primary data center - Provider XYZ",
+		Name:           "primary-dc-2",
+		Enabled:        true,
+		MinimumOrigins: IntPtr(0),
 	}
 
 	actual, err := client.CreateLoadBalancerPool(context.Background(), AccountIdentifier(testAccountID), CreateLoadBalancerPoolParams{LoadBalancerPool: request})
@@ -221,7 +292,8 @@ func TestListLoadBalancerPools(t *testing.T) {
                         "name": "app-server-1",
                         "address": "198.51.100.1",
                         "enabled": true,
-                        "weight": 1
+                        "weight": 1,
+					    "virtual_network_id":"a5624d4e-044a-4ff0-b3e1-e2465353d4b4"
                       }
                     ],
                     "notification_email": "someone@example.com"
@@ -231,7 +303,7 @@ func TestListLoadBalancerPools(t *testing.T) {
                 "page": 1,
                 "per_page": 20,
                 "count": 1,
-                "total_count": 2000
+                "total_count": 1
             }
         }`)
 	}
@@ -253,10 +325,11 @@ func TestListLoadBalancerPools(t *testing.T) {
 			},
 			Origins: []LoadBalancerOrigin{
 				{
-					Name:    "app-server-1",
-					Address: "198.51.100.1",
-					Enabled: true,
-					Weight:  1,
+					Name:             "app-server-1",
+					Address:          "198.51.100.1",
+					Enabled:          true,
+					Weight:           1,
+					VirtualNetworkID: "a5624d4e-044a-4ff0-b3e1-e2465353d4b4",
 				},
 			},
 			NotificationEmail: "someone@example.com",
@@ -306,7 +379,8 @@ func TestGetLoadBalancerPool(t *testing.T) {
                   "name": "app-server-1",
                   "address": "198.51.100.1",
                   "enabled": true,
-                  "weight": 1
+                  "weight": 1,
+				  "virtual_network_id":"a5624d4e-044a-4ff0-b3e1-e2465353d4b4"
                 }
               ],
               "notification_email": "someone@example.com"
@@ -330,10 +404,11 @@ func TestGetLoadBalancerPool(t *testing.T) {
 		},
 		Origins: []LoadBalancerOrigin{
 			{
-				Name:    "app-server-1",
-				Address: "198.51.100.1",
-				Enabled: true,
-				Weight:  1,
+				Name:             "app-server-1",
+				Address:          "198.51.100.1",
+				Enabled:          true,
+				Weight:           1,
+				VirtualNetworkID: "a5624d4e-044a-4ff0-b3e1-e2465353d4b4",
 			},
 		},
 		NotificationEmail: "someone@example.com",
@@ -418,7 +493,8 @@ func TestUpdateLoadBalancerPool(t *testing.T) {
                       "Host": [
                           "example.com"
                       ]
-                  }
+                  },
+			      "virtual_network_id":"a5624d4e-044a-4ff0-b3e1-e2465353d4b4"
                 }
               ],
               "notification_email": "nobody@example.com",
@@ -451,7 +527,8 @@ func TestUpdateLoadBalancerPool(t *testing.T) {
                       "Host": [
                           "example.com"
                       ]
-                  }
+                  },
+			      "virtual_network_id":"a5624d4e-044a-4ff0-b3e1-e2465353d4b4"
                 }
               ],
               "notification_email": "nobody@example.com",
@@ -484,6 +561,7 @@ func TestUpdateLoadBalancerPool(t *testing.T) {
 				Header: map[string][]string{
 					"Host": {"example.com"},
 				},
+				VirtualNetworkID: "a5624d4e-044a-4ff0-b3e1-e2465353d4b4",
 			},
 		},
 		NotificationEmail: "nobody@example.com",
@@ -508,6 +586,7 @@ func TestUpdateLoadBalancerPool(t *testing.T) {
 				Header: map[string][]string{
 					"Host": {"example.com"},
 				},
+				VirtualNetworkID: "a5624d4e-044a-4ff0-b3e1-e2465353d4b4",
 			},
 		},
 		NotificationEmail: "nobody@example.com",
@@ -558,6 +637,8 @@ func TestCreateLoadBalancerMonitor(t *testing.T) {
               "timeout": 3,
               "retries": 0,
               "interval": 90,
+              "consecutive_up": 2,
+              "consecutive_down": 2,
               "expected_body": "alive",
               "expected_codes": "2xx",
               "follow_redirects": true,
@@ -588,6 +669,8 @@ func TestCreateLoadBalancerMonitor(t *testing.T) {
                 "timeout": 3,
                 "retries": 0,
                 "interval": 90,
+                "consecutive_up": 2,
+                "consecutive_down": 2,
                 "expected_body": "alive",
                 "expected_codes": "2xx",
                 "follow_redirects": true,
@@ -612,11 +695,13 @@ func TestCreateLoadBalancerMonitor(t *testing.T) {
 			"Host":     {"example.com"},
 			"X-App-ID": {"abc123"},
 		},
-		Timeout:       3,
-		Retries:       0,
-		Interval:      90,
-		ExpectedBody:  "alive",
-		ExpectedCodes: "2xx",
+		Timeout:         3,
+		Retries:         0,
+		Interval:        90,
+		ConsecutiveUp:   2,
+		ConsecutiveDown: 2,
+		ExpectedBody:    "alive",
+		ExpectedCodes:   "2xx",
 
 		FollowRedirects: true,
 		AllowInsecure:   true,
@@ -630,11 +715,13 @@ func TestCreateLoadBalancerMonitor(t *testing.T) {
 			"Host":     {"example.com"},
 			"X-App-ID": {"abc123"},
 		},
-		Timeout:       3,
-		Retries:       0,
-		Interval:      90,
-		ExpectedBody:  "alive",
-		ExpectedCodes: "2xx",
+		Timeout:         3,
+		Retries:         0,
+		Interval:        90,
+		ConsecutiveUp:   2,
+		ConsecutiveDown: 2,
+		ExpectedBody:    "alive",
+		ExpectedCodes:   "2xx",
 
 		FollowRedirects: true,
 		AllowInsecure:   true,
@@ -687,6 +774,8 @@ func TestListLoadBalancerMonitors(t *testing.T) {
                     "timeout": 3,
                     "retries": 0,
                     "interval": 90,
+                    "consecutive_up": 2,
+                    "consecutive_down": 2,
                     "expected_body": "alive",
                     "expected_codes": "2xx"
                 }
@@ -695,7 +784,7 @@ func TestListLoadBalancerMonitors(t *testing.T) {
                 "page": 1,
                 "per_page": 20,
                 "count": 1,
-                "total_count": 2000
+                "total_count": 1
             }
         }`)
 	}
@@ -716,11 +805,13 @@ func TestListLoadBalancerMonitors(t *testing.T) {
 				"Host":     {"example.com"},
 				"X-App-ID": {"abc123"},
 			},
-			Timeout:       3,
-			Retries:       0,
-			Interval:      90,
-			ExpectedBody:  "alive",
-			ExpectedCodes: "2xx",
+			Timeout:         3,
+			Retries:         0,
+			Interval:        90,
+			ConsecutiveUp:   2,
+			ConsecutiveDown: 2,
+			ExpectedBody:    "alive",
+			ExpectedCodes:   "2xx",
 		},
 	}
 
@@ -770,6 +861,8 @@ func TestGetLoadBalancerMonitor(t *testing.T) {
                 "timeout": 3,
                 "retries": 0,
                 "interval": 90,
+                "consecutive_up": 2,
+                "consecutive_down": 2,
                 "expected_body": "alive",
                 "expected_codes": "2xx",
                 "follow_redirects": true,
@@ -794,11 +887,13 @@ func TestGetLoadBalancerMonitor(t *testing.T) {
 			"Host":     {"example.com"},
 			"X-App-ID": {"abc123"},
 		},
-		Timeout:       3,
-		Retries:       0,
-		Interval:      90,
-		ExpectedBody:  "alive",
-		ExpectedCodes: "2xx",
+		Timeout:         3,
+		Retries:         0,
+		Interval:        90,
+		ConsecutiveUp:   2,
+		ConsecutiveDown: 2,
+		ExpectedBody:    "alive",
+		ExpectedCodes:   "2xx",
 
 		FollowRedirects: true,
 		AllowInsecure:   true,
@@ -882,6 +977,8 @@ func TestUpdateLoadBalancerMonitor(t *testing.T) {
                 "timeout": 3,
                 "retries": 0,
                 "interval": 90,
+                "consecutive_up": 2,
+                "consecutive_down": 2,
                 "expected_body": "kicking",
                 "expected_codes": "200",
                 "follow_redirects": true,
@@ -912,6 +1009,8 @@ func TestUpdateLoadBalancerMonitor(t *testing.T) {
                 "timeout": 3,
                 "retries": 0,
                 "interval": 90,
+                "consecutive_up": 2,
+                "consecutive_down": 2,
                 "expected_body": "kicking",
                 "expected_codes": "200",
                 "follow_redirects": true,
@@ -936,11 +1035,13 @@ func TestUpdateLoadBalancerMonitor(t *testing.T) {
 			"Host":     {"example.com"},
 			"X-App-ID": {"easy"},
 		},
-		Timeout:       3,
-		Retries:       0,
-		Interval:      90,
-		ExpectedBody:  "kicking",
-		ExpectedCodes: "200",
+		Timeout:         3,
+		Retries:         0,
+		Interval:        90,
+		ConsecutiveUp:   2,
+		ConsecutiveDown: 2,
+		ExpectedBody:    "kicking",
+		ExpectedCodes:   "200",
 
 		FollowRedirects: true,
 		AllowInsecure:   true,
@@ -955,11 +1056,13 @@ func TestUpdateLoadBalancerMonitor(t *testing.T) {
 			"Host":     {"example.com"},
 			"X-App-ID": {"easy"},
 		},
-		Timeout:       3,
-		Retries:       0,
-		Interval:      90,
-		ExpectedBody:  "kicking",
-		ExpectedCodes: "200",
+		Timeout:         3,
+		Retries:         0,
+		Interval:        90,
+		ConsecutiveUp:   2,
+		ConsecutiveDown: 2,
+		ExpectedBody:    "kicking",
+		ExpectedCodes:   "200",
 
 		FollowRedirects: true,
 		AllowInsecure:   true,
@@ -1432,7 +1535,7 @@ func TestListLoadBalancers(t *testing.T) {
                 "page": 1,
                 "per_page": 20,
                 "count": 1,
-                "total_count": 2000
+                "total_count": 1
             }
         }`)
 	}

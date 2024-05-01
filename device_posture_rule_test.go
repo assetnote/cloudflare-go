@@ -40,7 +40,7 @@ func TestDevicePostureIntegrations(t *testing.T) {
 				"page": 1,
 				"per_page": 20,
 				"count": 1,
-				"total_count": 2000
+				"total_count": 1
 			}
 		}`)
 	}
@@ -228,6 +228,55 @@ func TestDevicePostureIntegrationCreate(t *testing.T) {
 	}
 }
 
+func TestDevicePostureIntegrationTaniumCreate(t *testing.T) {
+	setup()
+	defer teardown()
+
+	id := "480f4f69-1a28-4fdd-9240-1ed29f0ac1db"
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodPost, r.Method, "Expected method 'POST', got %s", r.Method)
+		w.Header().Set("content-type", "application/json")
+		fmt.Fprintf(w, `{
+			"success": true,
+			"errors": [],
+			"messages": [],
+			"result": {
+				"id": "%s",
+				"interval": "1h",
+				"type": "tanium_s2s",
+				"name": "My Tanium integration",
+				"config": {
+					"api_url":              "https://api_url.example.com",
+					"client_secret":        "test_client_secret",
+					"access_client_id":     "test_access_client_id",
+					"access_client_secret": "test_access_client_secret"
+				}
+			}
+		}`, id)
+	}
+
+	want := DevicePostureIntegration{
+		IntegrationID: id,
+		Name:          "My Tanium integration",
+		Type:          "tanium_s2s",
+		Interval:      "1h",
+		Config: DevicePostureIntegrationConfig{
+			ApiUrl:             "https://api_url.example.com",
+			ClientSecret:       "test_client_secret",
+			AccessClientID:     "test_access_client_id",
+			AccessClientSecret: "test_access_client_secret",
+		},
+	}
+
+	mux.HandleFunc("/accounts/"+testAccountID+"/devices/posture/integration", handler)
+
+	actual, err := client.CreateDevicePostureIntegration(context.Background(), testAccountID, want)
+
+	if assert.NoError(t, err) {
+		assert.Equal(t, want, actual)
+	}
+}
+
 func TestDevicePostureIntegrationDelete(t *testing.T) {
 	setup()
 	defer teardown()
@@ -240,7 +289,7 @@ func TestDevicePostureIntegrationDelete(t *testing.T) {
 			"success": true,
 			"errors": [],
 			"messages": [],
-			"result": null 
+			"result": null
 		}`)
 	}
 
@@ -288,7 +337,7 @@ func TestDevicePostureRules(t *testing.T) {
 				"page": 1,
 				"per_page": 20,
 				"count": 1,
-				"total_count": 2000
+				"total_count": 1
 			}
 		}
 		`)
@@ -529,6 +578,61 @@ func TestDevicePostureDomainJoinedRule(t *testing.T) {
 		Match:       []DevicePostureRuleMatch{{Platform: "ios"}},
 		Input: DevicePostureRuleInput{
 			Domain: "example.com",
+		},
+	}
+
+	mux.HandleFunc("/accounts/"+testAccountID+"/devices/posture/480f4f69-1a28-4fdd-9240-1ed29f0ac1db", handler)
+
+	actual, err := client.DevicePostureRule(context.Background(), testAccountID, "480f4f69-1a28-4fdd-9240-1ed29f0ac1db")
+
+	if assert.NoError(t, err) {
+		assert.Equal(t, want, actual)
+	}
+}
+
+func TestDevicePostureClientCertificateRule(t *testing.T) {
+	setup()
+	defer teardown()
+
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodGet, r.Method, "Expected method 'GET', got %s", r.Method)
+		w.Header().Set("content-type", "application/json")
+		fmt.Fprintf(w, `{
+			"success": true,
+			"errors": [],
+			"messages": [],
+			"result": {
+				"id": "480f4f69-1a28-4fdd-9240-1ed29f0ac1db",
+				"schedule": "1h",
+				"expiration": "1h",
+				"type": "client_certificate",
+				"name": "My rule name",
+				"description": "My description",
+				"match": [
+					{
+						"platform": "windows"
+					}
+				],
+				"input": {
+					"certificate_id": "d2c04b78-3ba2-4294-8efa-4e85aef0777f",
+					"cn": "example.com"
+				}
+			}
+		}
+		`)
+	}
+
+	want := DevicePostureRule{
+		ID:          "480f4f69-1a28-4fdd-9240-1ed29f0ac1db",
+		Name:        "My rule name",
+		Description: "My description",
+		Type:        "client_certificate",
+		Schedule:    "1h",
+		Expiration:  "1h",
+		Match:       []DevicePostureRuleMatch{{Platform: "windows"}},
+		Input: DevicePostureRuleInput{
+			CertificateID: "d2c04b78-3ba2-4294-8efa-4e85aef0777f",
+			CommonName:    "example.com",
 		},
 	}
 

@@ -2,13 +2,13 @@ package cloudflare
 
 import (
 	"context"
-	"encoding/json"
 	"encoding/pem"
 	"fmt"
 	"net/http"
 	"testing"
 	"time"
 
+	"github.com/goccy/go-json"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -129,7 +129,7 @@ func TestOriginCA_OriginCertificates(t *testing.T) {
     "page": 1,
     "per_page": 20,
     "count": 1,
-    "total_count": 2000
+    "total_count": 1
   }
 }`)
 	})

@@ -11,9 +11,13 @@ jobs:
     name: lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go${{ matrix.go-version }}-${{ hashFiles('**/go.mod') }}-${{ hashFiles('**/go.sum') }}
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3
+        uses: golangci/golangci-lint-action@v5
         with:
           version: latest
           args: "--config .golintci.yaml"
@@ -26,7 +30,7 @@ jobs:
       image: returntocorp/semgrep
     if: (github.actor != 'dependabot[bot]')
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - run: semgrep ci --config .semgrep.yml
         env:
           # only trigger for files in this change
@@ -36,7 +40,7 @@ jobs:
   #  name: structslop
   #  runs-on: ubuntu-latest
   #  steps:
-  #    - uses: actions/checkout@v3
+  #    - uses: actions/checkout@v4
   #    - uses: actions/setup-go@v3
   #      with:
   #        go-version: "1.18"

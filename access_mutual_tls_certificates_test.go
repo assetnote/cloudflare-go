@@ -53,7 +53,7 @@ func TestAccessMutualTLSCertificates(t *testing.T) {
 
 	mux.HandleFunc("/accounts/"+testAccountID+"/access/certificates", handler)
 
-	actual, err := client.AccessMutualTLSCertificates(context.Background(), testAccountID)
+	actual, _, err := client.ListAccessMutualTLSCertificates(context.Background(), testAccountRC, ListAccessMutualTLSCertificatesParams{})
 
 	if assert.NoError(t, err) {
 		assert.Equal(t, want, actual)
@@ -61,7 +61,7 @@ func TestAccessMutualTLSCertificates(t *testing.T) {
 
 	mux.HandleFunc("/zones/"+testZoneID+"/access/certificates", handler)
 
-	actual, err = client.ZoneAccessMutualTLSCertificates(context.Background(), testZoneID)
+	actual, _, err = client.ListAccessMutualTLSCertificates(context.Background(), testZoneRC, ListAccessMutualTLSCertificatesParams{})
 
 	if assert.NoError(t, err) {
 		assert.Equal(t, want, actual)
@@ -109,7 +109,7 @@ func TestAccessMutualTLSCertificate(t *testing.T) {
 
 	mux.HandleFunc("/accounts/"+testAccountID+"/access/certificates/f174e90a-fafe-4643-bbbc-4a0ed4fc8415", handler)
 
-	actual, err := client.AccessMutualTLSCertificate(context.Background(), testAccountID, "f174e90a-fafe-4643-bbbc-4a0ed4fc8415")
+	actual, err := client.GetAccessMutualTLSCertificate(context.Background(), testAccountRC, "f174e90a-fafe-4643-bbbc-4a0ed4fc8415")
 
 	if assert.NoError(t, err) {
 		assert.Equal(t, want, actual)
@@ -117,7 +117,7 @@ func TestAccessMutualTLSCertificate(t *testing.T) {
 
 	mux.HandleFunc("/zones/"+testZoneID+"/access/certificates/f174e90a-fafe-4643-bbbc-4a0ed4fc8415", handler)
 
-	actual, err = client.ZoneAccessMutualTLSCertificate(context.Background(), testZoneID, "f174e90a-fafe-4643-bbbc-4a0ed4fc8415")
+	actual, err = client.GetAccessMutualTLSCertificate(context.Background(), testZoneRC, "f174e90a-fafe-4643-bbbc-4a0ed4fc8415")
 
 	if assert.NoError(t, err) {
 		assert.Equal(t, want, actual)
@@ -153,7 +153,7 @@ func TestCreateAccessMutualTLSCertificate(t *testing.T) {
 	updatedAt, _ := time.Parse(time.RFC3339, "2014-01-01T05:20:00.12345Z")
 	expiresOn, _ := time.Parse(time.RFC3339, "2014-01-01T05:20:00.12345Z")
 
-	certificate := AccessMutualTLSCertificate{
+	certificate := CreateAccessMutualTLSCertificateParams{
 		Name:        "Allow devs",
 		Certificate: "-----BEGIN CERTIFICATE-----\nMIIGAjCCA+qgAwIBAgIJAI7kymlF7CWT...N4RI7KKB7nikiuUf8vhULKy5IX10\nDrUtmu/B\n-----END CERTIFICATE-----",
 	}
@@ -170,7 +170,7 @@ func TestCreateAccessMutualTLSCertificate(t *testing.T) {
 
 	mux.HandleFunc("/accounts/"+testAccountID+"/access/certificates", handler)
 
-	actual, err := client.CreateAccessMutualTLSCertificate(context.Background(), testAccountID, certificate)
+	actual, err := client.CreateAccessMutualTLSCertificate(context.Background(), testAccountRC, certificate)
 
 	if assert.NoError(t, err) {
 		assert.Equal(t, want, actual)
@@ -178,7 +178,7 @@ func TestCreateAccessMutualTLSCertificate(t *testing.T) {
 
 	mux.HandleFunc("/zones/"+testZoneID+"/access/certificates", handler)
 
-	actual, err = client.CreateZoneAccessMutualTLSCertificate(context.Background(), testZoneID, certificate)
+	actual, err = client.CreateAccessMutualTLSCertificate(context.Background(), testZoneRC, certificate)
 
 	if assert.NoError(t, err) {
 		assert.Equal(t, want, actual)
@@ -214,7 +214,8 @@ func TestUpdateAccessMutualTLSCertificate(t *testing.T) {
 	updatedAt, _ := time.Parse(time.RFC3339, "2014-01-01T05:20:00.12345Z")
 	expiresOn, _ := time.Parse(time.RFC3339, "2014-01-01T05:20:00.12345Z")
 
-	certificate := AccessMutualTLSCertificate{
+	certificate := UpdateAccessMutualTLSCertificateParams{
+		ID:          "f174e90a-fafe-4643-bbbc-4a0ed4fc8415",
 		Name:        "Allow devs",
 		Certificate: "-----BEGIN CERTIFICATE-----\nMIIGAjCCA+qgAwIBAgIJAI7kymlF7CWT...N4RI7KKB7nikiuUf8vhULKy5IX10\nDrUtmu/B\n-----END CERTIFICATE-----",
 	}
@@ -231,7 +232,7 @@ func TestUpdateAccessMutualTLSCertificate(t *testing.T) {
 
 	mux.HandleFunc("/accounts/"+testAccountID+"/access/certificates/f174e90a-fafe-4643-bbbc-4a0ed4fc8415", handler)
 
-	actual, err := client.UpdateAccessMutualTLSCertificate(context.Background(), testAccountID, "f174e90a-fafe-4643-bbbc-4a0ed4fc8415", certificate)
+	actual, err := client.UpdateAccessMutualTLSCertificate(context.Background(), testAccountRC, certificate)
 
 	if assert.NoError(t, err) {
 		assert.Equal(t, want, actual)
@@ -239,7 +240,7 @@ func TestUpdateAccessMutualTLSCertificate(t *testing.T) {
 
 	mux.HandleFunc("/zones/"+testZoneID+"/access/certificates/f174e90a-fafe-4643-bbbc-4a0ed4fc8415", handler)
 
-	actual, err = client.UpdateZoneAccessMutualTLSCertificate(context.Background(), testZoneID, "f174e90a-fafe-4643-bbbc-4a0ed4fc8415", certificate)
+	actual, err = client.UpdateAccessMutualTLSCertificate(context.Background(), testZoneRC, certificate)
 
 	if assert.NoError(t, err) {
 		assert.Equal(t, want, actual)
@@ -265,13 +266,140 @@ func TestDeleteAccessMutualTLSCertificate(t *testing.T) {
 
 	mux.HandleFunc("/accounts/"+testAccountID+"/access/certificates/f174e90a-fafe-4643-bbbc-4a0ed4fc8415", handler)
 
-	err := client.DeleteAccessMutualTLSCertificate(context.Background(), testAccountID, "f174e90a-fafe-4643-bbbc-4a0ed4fc8415")
+	err := client.DeleteAccessMutualTLSCertificate(context.Background(), testAccountRC, "f174e90a-fafe-4643-bbbc-4a0ed4fc8415")
 
 	assert.NoError(t, err)
 
 	mux.HandleFunc("/zones/"+testZoneID+"/access/certificates/f174e90a-fafe-4643-bbbc-4a0ed4fc8415", handler)
 
-	err = client.DeleteZoneAccessMutualTLSCertificate(context.Background(), testZoneID, "f174e90a-fafe-4643-bbbc-4a0ed4fc8415")
+	err = client.DeleteAccessMutualTLSCertificate(context.Background(), testZoneRC, "f174e90a-fafe-4643-bbbc-4a0ed4fc8415")
 
 	assert.NoError(t, err)
+}
+
+func TestGetAccessMutualTLSHostnameSettings(t *testing.T) {
+	setup()
+	defer teardown()
+
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodGet, r.Method, "Expected method 'GET', got %s", r.Method)
+		w.Header().Set("content-type", "application/json")
+		fmt.Fprintf(w, `{
+			"success": true,
+			"errors": [],
+			"messages": [],
+			"result": [
+				{
+					"china_network": false,
+					"client_certificate_forwarding": true,
+					"hostname": "admin.example.com"
+				},
+				{
+					"china_network": true,
+					"client_certificate_forwarding": false,
+					"hostname": "foobar.example.com"
+				}
+			]
+		}`)
+	}
+
+	want := []AccessMutualTLSHostnameSettings{
+		{
+			ChinaNetwork:                BoolPtr(false),
+			ClientCertificateForwarding: BoolPtr(true),
+			Hostname:                    "admin.example.com",
+		},
+		{
+			ChinaNetwork:                BoolPtr(true),
+			ClientCertificateForwarding: BoolPtr(false),
+			Hostname:                    "foobar.example.com",
+		},
+	}
+
+	mux.HandleFunc("/accounts/"+testAccountID+"/access/certificates/settings", handler)
+
+	actual, err := client.GetAccessMutualTLSHostnameSettings(context.Background(), testAccountRC)
+
+	if assert.NoError(t, err) {
+		assert.Equal(t, want, actual)
+	}
+
+	mux.HandleFunc("/zones/"+testZoneID+"/access/certificates/settings", handler)
+
+	actual, err = client.GetAccessMutualTLSHostnameSettings(context.Background(), testZoneRC)
+
+	if assert.NoError(t, err) {
+		assert.Equal(t, want, actual)
+	}
+}
+
+func TestUpdateAccessMutualTLSHostnameSettings(t *testing.T) {
+	setup()
+	defer teardown()
+
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodPut, r.Method, "Expected method 'PUT', got %s", r.Method)
+		w.Header().Set("content-type", "application/json")
+		fmt.Fprintf(w, `{
+			"success": true,
+			"errors": [],
+			"messages": [],
+			"result": [
+				{
+					"china_network": false,
+					"client_certificate_forwarding": true,
+					"hostname": "admin.example.com"
+				},
+				{
+					"china_network": true,
+					"client_certificate_forwarding": false,
+					"hostname": "foobar.example.com"
+				}
+			]
+		}`)
+	}
+
+	certificateSettings := UpdateAccessMutualTLSHostnameSettingsParams{
+		Settings: []AccessMutualTLSHostnameSettings{
+			{
+				ChinaNetwork:                BoolPtr(false),
+				ClientCertificateForwarding: BoolPtr(true),
+				Hostname:                    "admin.example.com",
+			},
+			{
+				ChinaNetwork:                BoolPtr(true),
+				ClientCertificateForwarding: BoolPtr(false),
+				Hostname:                    "foobar.example.com",
+			},
+		},
+	}
+
+	want := []AccessMutualTLSHostnameSettings{
+		{
+			ChinaNetwork:                BoolPtr(false),
+			ClientCertificateForwarding: BoolPtr(true),
+			Hostname:                    "admin.example.com",
+		},
+		{
+			ChinaNetwork:                BoolPtr(true),
+			ClientCertificateForwarding: BoolPtr(false),
+			Hostname:                    "foobar.example.com",
+		},
+	}
+
+	mux.HandleFunc("/accounts/"+testAccountID+"/access/certificates/settings", handler)
+
+	actual, err := client.UpdateAccessMutualTLSHostnameSettings(context.Background(), testAccountRC, certificateSettings)
+
+	if assert.NoError(t, err) {
+		assert.Equal(t, want, actual)
+	}
+
+	mux.HandleFunc("/zones/"+testZoneID+"/access/certificates/settings", handler)
+
+	actual, err = client.UpdateAccessMutualTLSHostnameSettings(context.Background(), testZoneRC, certificateSettings)
+
+	if assert.NoError(t, err) {
+		assert.Equal(t, want, actual)
+	}
 }

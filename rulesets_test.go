@@ -52,12 +52,12 @@ func TestListRulesets(t *testing.T) {
 		},
 	}
 
-	zoneActual, err := client.ListZoneRulesets(context.Background(), testZoneID)
+	zoneActual, err := client.ListRulesets(context.Background(), ZoneIdentifier(testZoneID), ListRulesetsParams{})
 	if assert.NoError(t, err) {
 		assert.Equal(t, want, zoneActual)
 	}
 
-	accountActual, err := client.ListAccountRulesets(context.Background(), testAccountID)
+	accountActual, err := client.ListRulesets(context.Background(), AccountIdentifier(testAccountID), ListRulesetsParams{})
 	if assert.NoError(t, err) {
 		assert.Equal(t, want, accountActual)
 	}
@@ -101,12 +101,12 @@ func TestGetRuleset_MagicTransit(t *testing.T) {
 		Phase:       string(RulesetPhaseMagicTransit),
 	}
 
-	zoneActual, err := client.GetZoneRuleset(context.Background(), testZoneID, "2c0fc9fa937b11eaa1b71c4d701ab86e")
+	zoneActual, err := client.GetRuleset(context.Background(), ZoneIdentifier(testZoneID), "2c0fc9fa937b11eaa1b71c4d701ab86e")
 	if assert.NoError(t, err) {
 		assert.Equal(t, want, zoneActual)
 	}
 
-	accountActual, err := client.GetAccountRuleset(context.Background(), testAccountID, "2c0fc9fa937b11eaa1b71c4d701ab86e")
+	accountActual, err := client.GetRuleset(context.Background(), AccountIdentifier(testAccountID), "2c0fc9fa937b11eaa1b71c4d701ab86e")
 	if assert.NoError(t, err) {
 		assert.Equal(t, want, accountActual)
 	}
@@ -188,12 +188,12 @@ func TestGetRuleset_WAF(t *testing.T) {
 		Rules:       rules,
 	}
 
-	zoneActual, err := client.GetZoneRuleset(context.Background(), testZoneID, "b232b534beea4e00a21dcbb7a8a545e9")
+	zoneActual, err := client.GetRuleset(context.Background(), ZoneIdentifier(testZoneID), "b232b534beea4e00a21dcbb7a8a545e9")
 	if assert.NoError(t, err) {
 		assert.Equal(t, want, zoneActual)
 	}
 
-	accountActual, err := client.GetAccountRuleset(context.Background(), testAccountID, "b232b534beea4e00a21dcbb7a8a545e9")
+	accountActual, err := client.GetRuleset(context.Background(), AccountIdentifier(testAccountID), "b232b534beea4e00a21dcbb7a8a545e9")
 	if assert.NoError(t, err) {
 		assert.Equal(t, want, accountActual)
 	}
@@ -241,7 +241,14 @@ func TestGetRuleset_SetCacheSettings(t *testing.T) {
 						}
 					}
 				},
-				"origin_error_page_passthru":true
+				"additional_cacheable_ports": [1,2,3,4],
+				"origin_cache_control": true,
+				"read_timeout": 1000,
+				"origin_error_page_passthru":true,
+				"cache_reserve": {
+					"eligible": true,
+					"minimum_file_size": 1000
+				}
 			},
 			"description": "Set all available cache settings in one rule",
 			"last_updated": "2020-12-18T09:28:09.655749Z",
@@ -324,7 +331,14 @@ func TestGetRuleset_SetCacheSettings(t *testing.T) {
 					},
 				},
 			},
-			OriginErrorPagePassthru: BoolPtr(true),
+			AdditionalCacheablePorts: []int{1, 2, 3, 4},
+			OriginCacheControl:       BoolPtr(true),
+			ReadTimeout:              UintPtr(1000),
+			OriginErrorPagePassthru:  BoolPtr(true),
+			CacheReserve: &RulesetRuleActionParametersCacheReserve{
+				Eligible:        BoolPtr(true),
+				MinimumFileSize: UintPtr(1000),
+			},
 		},
 		Description: "Set all available cache settings in one rule",
 		LastUpdated: &lastUpdated,
@@ -343,12 +357,12 @@ func TestGetRuleset_SetCacheSettings(t *testing.T) {
 		Rules:       rules,
 	}
 
-	zoneActual, err := client.GetZoneRuleset(context.Background(), testZoneID, "b232b534beea4e00a21dcbb7a8a545e9")
+	zoneActual, err := client.GetRuleset(context.Background(), ZoneIdentifier(testZoneID), "b232b534beea4e00a21dcbb7a8a545e9")
 	if assert.NoError(t, err) {
 		assert.Equal(t, want, zoneActual)
 	}
 
-	accountActual, err := client.GetAccountRuleset(context.Background(), testAccountID, "b232b534beea4e00a21dcbb7a8a545e9")
+	accountActual, err := client.GetRuleset(context.Background(), AccountIdentifier(testAccountID), "b232b534beea4e00a21dcbb7a8a545e9")
 	if assert.NoError(t, err) {
 		assert.Equal(t, want, accountActual)
 	}
@@ -454,12 +468,12 @@ func TestGetRuleset_SetConfig(t *testing.T) {
 		Rules:       rules,
 	}
 
-	zoneActual, err := client.GetZoneRuleset(context.Background(), testZoneID, "b232b534beea4e00a21dcbb7a8a545e9")
+	zoneActual, err := client.GetRuleset(context.Background(), ZoneIdentifier(testZoneID), "b232b534beea4e00a21dcbb7a8a545e9")
 	if assert.NoError(t, err) {
 		assert.Equal(t, want, zoneActual)
 	}
 
-	accountActual, err := client.GetAccountRuleset(context.Background(), testAccountID, "b232b534beea4e00a21dcbb7a8a545e9")
+	accountActual, err := client.GetRuleset(context.Background(), AccountIdentifier(testAccountID), "b232b534beea4e00a21dcbb7a8a545e9")
 	if assert.NoError(t, err) {
 		assert.Equal(t, want, accountActual)
 	}
@@ -523,7 +537,7 @@ func TestGetRuleset_RedirectFromValue(t *testing.T) {
 				TargetURL: RulesetRuleActionParametersTargetURL{
 					Value: "some_host.com",
 				},
-				PreserveQueryString: true,
+				PreserveQueryString: BoolPtr(true),
 			},
 		},
 		Description: "Set dynamic redirect from value",
@@ -543,12 +557,92 @@ func TestGetRuleset_RedirectFromValue(t *testing.T) {
 		Rules:       rules,
 	}
 
-	zoneActual, err := client.GetZoneRuleset(context.Background(), testZoneID, "b232b534beea4e00a21dcbb7a8a545e9")
+	zoneActual, err := client.GetRuleset(context.Background(), ZoneIdentifier(testZoneID), "b232b534beea4e00a21dcbb7a8a545e9")
 	if assert.NoError(t, err) {
 		assert.Equal(t, want, zoneActual)
 	}
 
-	accountActual, err := client.GetAccountRuleset(context.Background(), testAccountID, "b232b534beea4e00a21dcbb7a8a545e9")
+	accountActual, err := client.GetRuleset(context.Background(), AccountIdentifier(testAccountID), "b232b534beea4e00a21dcbb7a8a545e9")
+	if assert.NoError(t, err) {
+		assert.Equal(t, want, accountActual)
+	}
+}
+
+func TestGetRuleset_CompressResponse(t *testing.T) {
+	setup()
+	defer teardown()
+
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodGet, r.Method, "Expected method 'GET', got %s", r.Method)
+		w.Header().Set("content-type", "application/json")
+		fmt.Fprint(w, `{
+      "result": {
+        "id": "70339d97bdb34195bbf054b1ebe81f76",
+        "name": "Cloudflare compress response ruleset",
+        "description": "This ruleset provides response compression rules",
+        "kind": "zone",
+        "version": "1",
+        "rules": [
+          {
+            "id": "78723a9e0c7c4c6dbec5684cb766231d",
+            "version": "1",
+            "action": "compress_response",
+            "action_parameters": {
+				"algorithms": [ { "name": "brotli" }, { "name": "default" } ]
+            },
+			"description": "Compress response rule",
+			"last_updated": "2020-12-18T09:28:09.655749Z",
+			"ref": "272936dc447b41fe976255ff6b768ec0",
+			"enabled": true
+          }
+        ],
+        "last_updated": "2020-12-18T09:28:09.655749Z",
+        "phase": "http_response_compression"
+      },
+      "success": true,
+      "errors": [],
+      "messages": []
+    }`)
+	}
+
+	mux.HandleFunc("/accounts/"+testAccountID+"/rulesets/b232b534beea4e00a21dcbb7a8a545e9", handler)
+	mux.HandleFunc("/zones/"+testZoneID+"/rulesets/b232b534beea4e00a21dcbb7a8a545e9", handler)
+
+	lastUpdated, _ := time.Parse(time.RFC3339, "2020-12-18T09:28:09.655749Z")
+
+	rules := []RulesetRule{{
+		ID:      "78723a9e0c7c4c6dbec5684cb766231d",
+		Version: StringPtr("1"),
+		Action:  string(RulesetRuleActionCompressResponse),
+		ActionParameters: &RulesetRuleActionParameters{
+			Algorithms: []RulesetRuleActionParametersCompressionAlgorithm{
+				{Name: "brotli"},
+				{Name: "default"},
+			},
+		},
+		Description: "Compress response rule",
+		LastUpdated: &lastUpdated,
+		Ref:         "272936dc447b41fe976255ff6b768ec0",
+		Enabled:     BoolPtr(true),
+	}}
+
+	want := Ruleset{
+		ID:          "70339d97bdb34195bbf054b1ebe81f76",
+		Name:        "Cloudflare compress response ruleset",
+		Description: "This ruleset provides response compression rules",
+		Kind:        string(RulesetKindZone),
+		Version:     StringPtr("1"),
+		LastUpdated: &lastUpdated,
+		Phase:       string(RulesetPhaseHTTPResponseCompression),
+		Rules:       rules,
+	}
+
+	zoneActual, err := client.GetRuleset(context.Background(), ZoneIdentifier(testZoneID), "b232b534beea4e00a21dcbb7a8a545e9")
+	if assert.NoError(t, err) {
+		assert.Equal(t, want, zoneActual)
+	}
+
+	accountActual, err := client.GetRuleset(context.Background(), AccountIdentifier(testAccountID), "b232b534beea4e00a21dcbb7a8a545e9")
 	if assert.NoError(t, err) {
 		assert.Equal(t, want, accountActual)
 	}
@@ -611,7 +705,7 @@ func TestCreateRuleset(t *testing.T) {
 		Enabled:     BoolPtr(true),
 	}}
 
-	newRuleset := Ruleset{
+	newRuleset := CreateRulesetParams{
 		Name:        "my example ruleset",
 		Description: "Test magic transit ruleset",
 		Kind:        "root",
@@ -630,12 +724,12 @@ func TestCreateRuleset(t *testing.T) {
 		Rules:       rules,
 	}
 
-	zoneActual, err := client.CreateZoneRuleset(context.Background(), testZoneID, newRuleset)
+	zoneActual, err := client.CreateRuleset(context.Background(), ZoneIdentifier(testZoneID), newRuleset)
 	if assert.NoError(t, err) {
 		assert.Equal(t, want, zoneActual)
 	}
 
-	accountActual, err := client.CreateAccountRuleset(context.Background(), testAccountID, newRuleset)
+	accountActual, err := client.CreateRuleset(context.Background(), AccountIdentifier(testAccountID), newRuleset)
 	if assert.NoError(t, err) {
 		assert.Equal(t, want, accountActual)
 	}
@@ -654,10 +748,10 @@ func TestDeleteRuleset(t *testing.T) {
 	mux.HandleFunc("/accounts/"+testAccountID+"/rulesets/2c0fc9fa937b11eaa1b71c4d701ab86e", handler)
 	mux.HandleFunc("/zones/"+testZoneID+"/rulesets/2c0fc9fa937b11eaa1b71c4d701ab86e", handler)
 
-	zErr := client.DeleteZoneRuleset(context.Background(), testZoneID, "2c0fc9fa937b11eaa1b71c4d701ab86e")
+	zErr := client.DeleteRuleset(context.Background(), ZoneIdentifier(testZoneID), "2c0fc9fa937b11eaa1b71c4d701ab86e")
 	assert.NoError(t, zErr)
 
-	aErr := client.DeleteAccountRuleset(context.Background(), testAccountID, "2c0fc9fa937b11eaa1b71c4d701ab86e")
+	aErr := client.DeleteRuleset(context.Background(), AccountIdentifier(testAccountID), "2c0fc9fa937b11eaa1b71c4d701ab86e")
 	assert.NoError(t, aErr)
 }
 
@@ -743,6 +837,12 @@ func TestUpdateRuleset(t *testing.T) {
 		Enabled:     BoolPtr(true),
 	}}
 
+	updated := UpdateRulesetParams{
+		ID:          "2c0fc9fa937b11eaa1b71c4d701ab86e",
+		Description: "Test Firewall Ruleset Update",
+		Rules:       rules,
+	}
+
 	want := Ruleset{
 		ID:          "2c0fc9fa937b11eaa1b71c4d701ab86e",
 		Name:        "ruleset1",
@@ -754,12 +854,12 @@ func TestUpdateRuleset(t *testing.T) {
 		Rules:       rules,
 	}
 
-	zoneActual, err := client.UpdateZoneRuleset(context.Background(), testZoneID, "2c0fc9fa937b11eaa1b71c4d701ab86e", "Test Firewall Ruleset Update", rules)
+	zoneActual, err := client.UpdateRuleset(context.Background(), ZoneIdentifier(testZoneID), updated)
 	if assert.NoError(t, err) {
 		assert.Equal(t, want, zoneActual)
 	}
 
-	accountActual, err := client.UpdateAccountRuleset(context.Background(), testAccountID, "2c0fc9fa937b11eaa1b71c4d701ab86e", "Test Firewall Ruleset Update", rules)
+	accountActual, err := client.UpdateRuleset(context.Background(), AccountIdentifier(testAccountID), updated)
 	if assert.NoError(t, err) {
 		assert.Equal(t, want, accountActual)
 	}

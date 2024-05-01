@@ -2,13 +2,13 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"strings"
 
 	cloudflare "github.com/cloudflare/cloudflare-go"
+	"github.com/goccy/go-json"
 	"github.com/olekukonko/tablewriter"
 	"github.com/urfave/cli/v2"
 )
@@ -42,10 +42,6 @@ func initializeAPI(c *cli.Context) error {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "cloudflare api: %s", err)
 		return err
-	}
-
-	if c.IsSet("account-id") {
-		cloudflare.UsingAccount(c.String("account-id"))(api) // nolint
 	}
 
 	return nil

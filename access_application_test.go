@@ -10,6 +10,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const (
+	testAccessApplicationID = "480f4f69-1a28-4fdd-9240-1ed29f0ac1db"
+)
+
 func TestAccessApplications(t *testing.T) {
 	setup()
 	defer teardown()
@@ -35,20 +39,26 @@ func TestAccessApplications(t *testing.T) {
 					"auto_redirect_to_identity": false,
 					"enable_binding_cookie": false,
 					"custom_deny_url": "https://www.example.com",
+					"custom_non_identity_deny_url": "https://blocked.com",
 					"custom_deny_message": "denied!",
 					"http_only_cookie_attribute": true,
 					"same_site_cookie_attribute": "strict",
 					"logo_url": "https://www.example.com/example.png",
 					"skip_interstitial": true,
 					"app_launcher_visible": true,
-					"service_auth_401_redirect": true
+					"service_auth_401_redirect": true,
+					"path_cookie_attribute": true,
+					"custom_pages": ["480f4f69-1a28-4fdd-9240-1ed29f0ac1dc"],
+					"tags": ["engineers"],
+					"allow_authenticate_via_warp": true,
+					"options_preflight_bypass": false
 				}
 			],
 			"result_info": {
 				"page": 1,
 				"per_page": 20,
 				"count": 1,
-				"total_count": 2000
+				"total_count": 1
 			}
 		}
 		`)
@@ -58,30 +68,36 @@ func TestAccessApplications(t *testing.T) {
 	updatedAt, _ := time.Parse(time.RFC3339, "2014-01-01T05:20:00.12345Z")
 
 	want := []AccessApplication{{
-		ID:                      "480f4f69-1a28-4fdd-9240-1ed29f0ac1db",
-		CreatedAt:               &createdAt,
-		UpdatedAt:               &updatedAt,
-		AUD:                     "737646a56ab1df6ec9bddc7e5ca84eaf3b0768850f3ffb5d74f1534911fe3893",
-		Name:                    "Admin Site",
-		Domain:                  "test.example.com/admin",
-		Type:                    "self_hosted",
-		SessionDuration:         "24h",
-		AllowedIdps:             []string{"f174e90a-fafe-4643-bbbc-4a0ed4fc8415"},
-		AutoRedirectToIdentity:  BoolPtr(false),
-		EnableBindingCookie:     BoolPtr(false),
-		AppLauncherVisible:      BoolPtr(true),
-		ServiceAuth401Redirect:  BoolPtr(true),
-		CustomDenyMessage:       "denied!",
-		CustomDenyURL:           "https://www.example.com",
-		SameSiteCookieAttribute: "strict",
-		HttpOnlyCookieAttribute: BoolPtr(true),
-		LogoURL:                 "https://www.example.com/example.png",
-		SkipInterstitial:        BoolPtr(true),
+		ID:                       "480f4f69-1a28-4fdd-9240-1ed29f0ac1db",
+		CreatedAt:                &createdAt,
+		UpdatedAt:                &updatedAt,
+		AUD:                      "737646a56ab1df6ec9bddc7e5ca84eaf3b0768850f3ffb5d74f1534911fe3893",
+		Name:                     "Admin Site",
+		Domain:                   "test.example.com/admin",
+		Type:                     "self_hosted",
+		SessionDuration:          "24h",
+		AllowedIdps:              []string{"f174e90a-fafe-4643-bbbc-4a0ed4fc8415"},
+		AutoRedirectToIdentity:   BoolPtr(false),
+		EnableBindingCookie:      BoolPtr(false),
+		AppLauncherVisible:       BoolPtr(true),
+		ServiceAuth401Redirect:   BoolPtr(true),
+		CustomDenyMessage:        "denied!",
+		CustomDenyURL:            "https://www.example.com",
+		SameSiteCookieAttribute:  "strict",
+		HttpOnlyCookieAttribute:  BoolPtr(true),
+		LogoURL:                  "https://www.example.com/example.png",
+		SkipInterstitial:         BoolPtr(true),
+		PathCookieAttribute:      BoolPtr(true),
+		CustomPages:              []string{"480f4f69-1a28-4fdd-9240-1ed29f0ac1dc"},
+		Tags:                     []string{"engineers"},
+		CustomNonIdentityDenyURL: "https://blocked.com",
+		AllowAuthenticateViaWarp: BoolPtr(true),
+		OptionsPreflightBypass:   BoolPtr(false),
 	}}
 
 	mux.HandleFunc("/accounts/"+testAccountID+"/access/apps", handler)
 
-	actual, _, err := client.AccessApplications(context.Background(), testAccountID, PaginationOptions{})
+	actual, _, err := client.ListAccessApplications(context.Background(), AccountIdentifier(testAccountID), ListAccessApplicationsParams{})
 
 	if assert.NoError(t, err) {
 		assert.Equal(t, want, actual)
@@ -89,7 +105,7 @@ func TestAccessApplications(t *testing.T) {
 
 	mux.HandleFunc("/zones/"+testZoneID+"/access/apps", handler)
 
-	actual, _, err = client.ZoneLevelAccessApplications(context.Background(), testZoneID, PaginationOptions{})
+	actual, _, err = client.ListAccessApplications(context.Background(), ZoneIdentifier(testZoneID), ListAccessApplicationsParams{})
 
 	if assert.NoError(t, err) {
 		assert.Equal(t, want, actual)
@@ -114,18 +130,23 @@ func TestAccessApplication(t *testing.T) {
 				"aud": "737646a56ab1df6ec9bddc7e5ca84eaf3b0768850f3ffb5d74f1534911fe3893",
 				"name": "Admin Site",
 				"domain": "test.example.com/admin",
+				"self_hosted_domains": ["test.example.com/admin", "test.example.com/admin2"],
 				"type": "self_hosted",
 				"session_duration": "24h",
 				"allowed_idps": ["f174e90a-fafe-4643-bbbc-4a0ed4fc8415"],
 				"auto_redirect_to_identity": false,
 				"enable_binding_cookie": false,
 				"custom_deny_url": "https://www.example.com",
+				"custom_non_identity_deny_url": "https://blocked.com",
 				"custom_deny_message": "denied!",
 				"logo_url": "https://www.example.com/example.png",
 				"skip_interstitial": true,
 				"app_launcher_visible": true,
 				"service_auth_401_redirect": true,
-				"http_only_cookie_attribute": false
+				"http_only_cookie_attribute": false,
+				"path_cookie_attribute": false,
+				"allow_authenticate_via_warp": false,
+				"options_preflight_bypass": false
 			}
 		}
 		`)
@@ -135,29 +156,34 @@ func TestAccessApplication(t *testing.T) {
 	updatedAt, _ := time.Parse(time.RFC3339, "2014-01-01T05:20:00.12345Z")
 
 	want := AccessApplication{
-		ID:                      "480f4f69-1a28-4fdd-9240-1ed29f0ac1db",
-		CreatedAt:               &createdAt,
-		UpdatedAt:               &updatedAt,
-		AUD:                     "737646a56ab1df6ec9bddc7e5ca84eaf3b0768850f3ffb5d74f1534911fe3893",
-		Name:                    "Admin Site",
-		Domain:                  "test.example.com/admin",
-		Type:                    "self_hosted",
-		SessionDuration:         "24h",
-		AllowedIdps:             []string{"f174e90a-fafe-4643-bbbc-4a0ed4fc8415"},
-		AutoRedirectToIdentity:  BoolPtr(false),
-		EnableBindingCookie:     BoolPtr(false),
-		AppLauncherVisible:      BoolPtr(true),
-		ServiceAuth401Redirect:  BoolPtr(true),
-		CustomDenyMessage:       "denied!",
-		CustomDenyURL:           "https://www.example.com",
-		LogoURL:                 "https://www.example.com/example.png",
-		SkipInterstitial:        BoolPtr(true),
-		HttpOnlyCookieAttribute: BoolPtr(false),
+		ID:                       "480f4f69-1a28-4fdd-9240-1ed29f0ac1db",
+		CreatedAt:                &createdAt,
+		UpdatedAt:                &updatedAt,
+		AUD:                      "737646a56ab1df6ec9bddc7e5ca84eaf3b0768850f3ffb5d74f1534911fe3893",
+		Name:                     "Admin Site",
+		Domain:                   "test.example.com/admin",
+		SelfHostedDomains:        []string{"test.example.com/admin", "test.example.com/admin2"},
+		Type:                     "self_hosted",
+		SessionDuration:          "24h",
+		AllowedIdps:              []string{"f174e90a-fafe-4643-bbbc-4a0ed4fc8415"},
+		AutoRedirectToIdentity:   BoolPtr(false),
+		EnableBindingCookie:      BoolPtr(false),
+		AppLauncherVisible:       BoolPtr(true),
+		ServiceAuth401Redirect:   BoolPtr(true),
+		CustomDenyMessage:        "denied!",
+		CustomDenyURL:            "https://www.example.com",
+		LogoURL:                  "https://www.example.com/example.png",
+		SkipInterstitial:         BoolPtr(true),
+		HttpOnlyCookieAttribute:  BoolPtr(false),
+		PathCookieAttribute:      BoolPtr(false),
+		CustomNonIdentityDenyURL: "https://blocked.com",
+		AllowAuthenticateViaWarp: BoolPtr(false),
+		OptionsPreflightBypass:   BoolPtr(false),
 	}
 
 	mux.HandleFunc("/accounts/"+testAccountID+"/access/apps/480f4f69-1a28-4fdd-9240-1ed29f0ac1db", handler)
 
-	actual, err := client.AccessApplication(context.Background(), testAccountID, "480f4f69-1a28-4fdd-9240-1ed29f0ac1db")
+	actual, err := client.GetAccessApplication(context.Background(), AccountIdentifier(testAccountID), "480f4f69-1a28-4fdd-9240-1ed29f0ac1db")
 
 	if assert.NoError(t, err) {
 		assert.Equal(t, want, actual)
@@ -165,7 +191,7 @@ func TestAccessApplication(t *testing.T) {
 
 	mux.HandleFunc("/zones/"+testZoneID+"/access/apps/480f4f69-1a28-4fdd-9240-1ed29f0ac1db", handler)
 
-	actual, err = client.ZoneLevelAccessApplication(context.Background(), testZoneID, "480f4f69-1a28-4fdd-9240-1ed29f0ac1db")
+	actual, err = client.GetAccessApplication(context.Background(), ZoneIdentifier(testZoneID), "480f4f69-1a28-4fdd-9240-1ed29f0ac1db")
 
 	if assert.NoError(t, err) {
 		assert.Equal(t, want, actual)
@@ -190,6 +216,7 @@ func TestCreateAccessApplications(t *testing.T) {
 				"aud": "737646a56ab1df6ec9bddc7e5ca84eaf3b0768850f3ffb5d74f1534911fe3893",
 				"name": "Admin Site",
 				"domain": "test.example.com/admin",
+				"self_hosted_domains": ["test.example.com/admin", "test.example.com/admin2"],
 				"type": "self_hosted",
 				"session_duration": "24h",
 				"allowed_idps": ["f174e90a-fafe-4643-bbbc-4a0ed4fc8415"],
@@ -197,10 +224,14 @@ func TestCreateAccessApplications(t *testing.T) {
 				"enable_binding_cookie": false,
 				"custom_deny_url": "https://www.example.com",
 				"custom_deny_message": "denied!",
+				"custom_non_identity_deny_url": "https://blocked.com",
 				"logo_url": "https://www.example.com/example.png",
 				"skip_interstitial": true,
 				"app_launcher_visible": true,
-				"service_auth_401_redirect": true
+				"service_auth_401_redirect": true,
+				"tags": ["engineers"],
+				"allow_authenticate_via_warp": false,
+				"options_preflight_bypass": true
 			}
 		}
 		`)
@@ -209,28 +240,33 @@ func TestCreateAccessApplications(t *testing.T) {
 	createdAt, _ := time.Parse(time.RFC3339, "2014-01-01T05:20:00.12345Z")
 	updatedAt, _ := time.Parse(time.RFC3339, "2014-01-01T05:20:00.12345Z")
 	fullAccessApplication := AccessApplication{
-		ID:                     "480f4f69-1a28-4fdd-9240-1ed29f0ac1db",
-		Name:                   "Admin Site",
-		Domain:                 "test.example.com/admin",
-		Type:                   "self_hosted",
-		SessionDuration:        "24h",
-		AUD:                    "737646a56ab1df6ec9bddc7e5ca84eaf3b0768850f3ffb5d74f1534911fe3893",
-		AllowedIdps:            []string{"f174e90a-fafe-4643-bbbc-4a0ed4fc8415"},
-		AutoRedirectToIdentity: BoolPtr(false),
-		EnableBindingCookie:    BoolPtr(false),
-		AppLauncherVisible:     BoolPtr(true),
-		ServiceAuth401Redirect: BoolPtr(true),
-		CustomDenyMessage:      "denied!",
-		CustomDenyURL:          "https://www.example.com",
-		LogoURL:                "https://www.example.com/example.png",
-		SkipInterstitial:       BoolPtr(true),
-		CreatedAt:              &createdAt,
-		UpdatedAt:              &updatedAt,
+		ID:                       "480f4f69-1a28-4fdd-9240-1ed29f0ac1db",
+		Name:                     "Admin Site",
+		Domain:                   "test.example.com/admin",
+		SelfHostedDomains:        []string{"test.example.com/admin", "test.example.com/admin2"},
+		Type:                     "self_hosted",
+		SessionDuration:          "24h",
+		AUD:                      "737646a56ab1df6ec9bddc7e5ca84eaf3b0768850f3ffb5d74f1534911fe3893",
+		AllowedIdps:              []string{"f174e90a-fafe-4643-bbbc-4a0ed4fc8415"},
+		AutoRedirectToIdentity:   BoolPtr(false),
+		EnableBindingCookie:      BoolPtr(false),
+		AppLauncherVisible:       BoolPtr(true),
+		ServiceAuth401Redirect:   BoolPtr(true),
+		CustomDenyMessage:        "denied!",
+		CustomDenyURL:            "https://www.example.com",
+		LogoURL:                  "https://www.example.com/example.png",
+		SkipInterstitial:         BoolPtr(true),
+		CreatedAt:                &createdAt,
+		UpdatedAt:                &updatedAt,
+		CustomNonIdentityDenyURL: "https://blocked.com",
+		Tags:                     []string{"engineers"},
+		AllowAuthenticateViaWarp: BoolPtr(false),
+		OptionsPreflightBypass:   BoolPtr(true),
 	}
 
 	mux.HandleFunc("/accounts/"+testAccountID+"/access/apps", handler)
 
-	actual, err := client.CreateAccessApplication(context.Background(), testAccountID, AccessApplication{
+	actual, err := client.CreateAccessApplication(context.Background(), AccountIdentifier(testAccountID), CreateAccessApplicationParams{
 		Name:            "Admin Site",
 		Domain:          "test.example.com/admin",
 		SessionDuration: "24h",
@@ -242,7 +278,7 @@ func TestCreateAccessApplications(t *testing.T) {
 
 	mux.HandleFunc("/zones/"+testZoneID+"/access/apps", handler)
 
-	actual, err = client.CreateZoneLevelAccessApplication(context.Background(), testZoneID, AccessApplication{
+	actual, err = client.CreateAccessApplication(context.Background(), ZoneIdentifier(testZoneID), CreateAccessApplicationParams{
 		Name:            "Admin Site",
 		Domain:          "test.example.com/admin",
 		SessionDuration: "24h",
@@ -271,6 +307,7 @@ func TestUpdateAccessApplication(t *testing.T) {
 				"aud": "737646a56ab1df6ec9bddc7e5ca84eaf3b0768850f3ffb5d74f1534911fe3893",
 				"name": "Admin Site",
 				"domain": "test.example.com/admin",
+				"self_hosted_domains": ["test.example.com/admin", "test.example.com/admin2"],
 				"type": "self_hosted",
 				"session_duration": "24h",
 				"allowed_idps": ["f174e90a-fafe-4643-bbbc-4a0ed4fc8415"],
@@ -278,40 +315,70 @@ func TestUpdateAccessApplication(t *testing.T) {
 				"enable_binding_cookie": false,
 				"custom_deny_url": "https://www.example.com",
 				"custom_deny_message": "denied!",
+				"custom_non_identity_deny_url": "https://blocked.com",
 				"logo_url": "https://www.example.com/example.png",
 				"skip_interstitial": true,
 				"app_launcher_visible": true,
-				"service_auth_401_redirect": true
+				"service_auth_401_redirect": true,
+				"tags": ["engineers"],
+				"allow_authenticate_via_warp": true,
+				"options_preflight_bypass": true
 			}
 		}
 		`)
 	}
 
-	createdAt, _ := time.Parse(time.RFC3339, "2014-01-01T05:20:00.12345Z")
-	updatedAt, _ := time.Parse(time.RFC3339, "2014-01-01T05:20:00.12345Z")
 	fullAccessApplication := AccessApplication{
-		ID:                     "480f4f69-1a28-4fdd-9240-1ed29f0ac1db",
-		Name:                   "Admin Site",
-		Domain:                 "test.example.com/admin",
-		Type:                   "self_hosted",
-		SessionDuration:        "24h",
-		AUD:                    "737646a56ab1df6ec9bddc7e5ca84eaf3b0768850f3ffb5d74f1534911fe3893",
-		AllowedIdps:            []string{"f174e90a-fafe-4643-bbbc-4a0ed4fc8415"},
-		AutoRedirectToIdentity: BoolPtr(false),
-		EnableBindingCookie:    BoolPtr(false),
-		AppLauncherVisible:     BoolPtr(true),
-		ServiceAuth401Redirect: BoolPtr(true),
-		CustomDenyMessage:      "denied!",
-		CustomDenyURL:          "https://www.example.com",
-		LogoURL:                "https://www.example.com/example.png",
-		SkipInterstitial:       BoolPtr(true),
-		CreatedAt:              &createdAt,
-		UpdatedAt:              &updatedAt,
+		ID:                       "480f4f69-1a28-4fdd-9240-1ed29f0ac1db",
+		Name:                     "Admin Site",
+		Domain:                   "test.example.com/admin",
+		SelfHostedDomains:        []string{"test.example.com/admin", "test.example.com/admin2"},
+		Type:                     "self_hosted",
+		SessionDuration:          "24h",
+		AUD:                      "737646a56ab1df6ec9bddc7e5ca84eaf3b0768850f3ffb5d74f1534911fe3893",
+		AllowedIdps:              []string{"f174e90a-fafe-4643-bbbc-4a0ed4fc8415"},
+		AutoRedirectToIdentity:   BoolPtr(false),
+		EnableBindingCookie:      BoolPtr(false),
+		AppLauncherVisible:       BoolPtr(true),
+		ServiceAuth401Redirect:   BoolPtr(true),
+		CustomDenyMessage:        "denied!",
+		CustomDenyURL:            "https://www.example.com",
+		LogoURL:                  "https://www.example.com/example.png",
+		CustomNonIdentityDenyURL: "https://blocked.com",
+		Tags:                     []string{"engineers"},
+		SkipInterstitial:         BoolPtr(true),
+		AllowAuthenticateViaWarp: BoolPtr(true),
+		OptionsPreflightBypass:   BoolPtr(true),
+		CreatedAt:                &createdAt,
+		UpdatedAt:                &updatedAt,
+	}
+
+	params := UpdateAccessApplicationParams{
+		ID:                       "480f4f69-1a28-4fdd-9240-1ed29f0ac1db",
+		Name:                     "Admin Site",
+		Domain:                   "test.example.com/admin",
+		SelfHostedDomains:        []string{"test.example.com/admin", "test.example.com/admin2"},
+		Type:                     "self_hosted",
+		SessionDuration:          "24h",
+		AUD:                      "737646a56ab1df6ec9bddc7e5ca84eaf3b0768850f3ffb5d74f1534911fe3893",
+		AllowedIdps:              []string{"f174e90a-fafe-4643-bbbc-4a0ed4fc8415"},
+		AutoRedirectToIdentity:   BoolPtr(false),
+		EnableBindingCookie:      BoolPtr(false),
+		AppLauncherVisible:       BoolPtr(true),
+		ServiceAuth401Redirect:   BoolPtr(true),
+		CustomDenyMessage:        "denied!",
+		CustomDenyURL:            "https://www.example.com",
+		LogoURL:                  "https://www.example.com/example.png",
+		SkipInterstitial:         BoolPtr(true),
+		CustomNonIdentityDenyURL: "https://blocked.com",
+		Tags:                     []string{"engineers"},
+		AllowAuthenticateViaWarp: BoolPtr(true),
+		OptionsPreflightBypass:   BoolPtr(true),
 	}
 
 	mux.HandleFunc("/accounts/"+testAccountID+"/access/apps/480f4f69-1a28-4fdd-9240-1ed29f0ac1db", handler)
 
-	actual, err := client.UpdateAccessApplication(context.Background(), testAccountID, fullAccessApplication)
+	actual, err := client.UpdateAccessApplication(context.Background(), AccountIdentifier(testAccountID), params)
 
 	if assert.NoError(t, err) {
 		assert.Equal(t, fullAccessApplication, actual)
@@ -319,7 +386,26 @@ func TestUpdateAccessApplication(t *testing.T) {
 
 	mux.HandleFunc("/zones/"+testZoneID+"/access/apps/480f4f69-1a28-4fdd-9240-1ed29f0ac1db", handler)
 
-	actual, err = client.UpdateZoneLevelAccessApplication(context.Background(), testZoneID, fullAccessApplication)
+	actual, err = client.UpdateAccessApplication(context.Background(), ZoneIdentifier(testZoneID), UpdateAccessApplicationParams{
+		ID:                       "480f4f69-1a28-4fdd-9240-1ed29f0ac1db",
+		Name:                     "Admin Site",
+		Domain:                   "test.example.com/admin",
+		SelfHostedDomains:        []string{"test.example.com/admin", "test.example.com/admin2"},
+		Type:                     "self_hosted",
+		SessionDuration:          "24h",
+		AUD:                      "737646a56ab1df6ec9bddc7e5ca84eaf3b0768850f3ffb5d74f1534911fe3893",
+		AllowedIdps:              []string{"f174e90a-fafe-4643-bbbc-4a0ed4fc8415"},
+		AutoRedirectToIdentity:   BoolPtr(false),
+		EnableBindingCookie:      BoolPtr(false),
+		AppLauncherVisible:       BoolPtr(true),
+		ServiceAuth401Redirect:   BoolPtr(true),
+		CustomDenyMessage:        "denied!",
+		CustomDenyURL:            "https://www.example.com",
+		LogoURL:                  "https://www.example.com/example.png",
+		SkipInterstitial:         BoolPtr(true),
+		CustomNonIdentityDenyURL: "https://blocked.com",
+		OptionsPreflightBypass:   BoolPtr(true),
+	})
 
 	if assert.NoError(t, err) {
 		assert.Equal(t, fullAccessApplication, actual)
@@ -330,10 +416,10 @@ func TestUpdateAccessApplicationWithMissingID(t *testing.T) {
 	setup()
 	defer teardown()
 
-	_, err := client.UpdateAccessApplication(context.Background(), testZoneID, AccessApplication{})
+	_, err := client.UpdateAccessApplication(context.Background(), AccountIdentifier(testAccountID), UpdateAccessApplicationParams{})
 	assert.EqualError(t, err, "access application ID cannot be empty")
 
-	_, err = client.UpdateZoneLevelAccessApplication(context.Background(), testZoneID, AccessApplication{})
+	_, err = client.UpdateAccessApplication(context.Background(), AccountIdentifier(testAccountID), UpdateAccessApplicationParams{})
 	assert.EqualError(t, err, "access application ID cannot be empty")
 }
 
@@ -356,12 +442,12 @@ func TestDeleteAccessApplication(t *testing.T) {
 	}
 
 	mux.HandleFunc("/accounts/"+testAccountID+"/access/apps/480f4f69-1a28-4fdd-9240-1ed29f0ac1db", handler)
-	err := client.DeleteAccessApplication(context.Background(), testAccountID, "480f4f69-1a28-4fdd-9240-1ed29f0ac1db")
+	err := client.DeleteAccessApplication(context.Background(), AccountIdentifier(testAccountID), "480f4f69-1a28-4fdd-9240-1ed29f0ac1db")
 
 	assert.NoError(t, err)
 
 	mux.HandleFunc("/zones/"+testZoneID+"/access/apps/480f4f69-1a28-4fdd-9240-1ed29f0ac1db", handler)
-	err = client.DeleteZoneLevelAccessApplication(context.Background(), testZoneID, "480f4f69-1a28-4fdd-9240-1ed29f0ac1db")
+	err = client.DeleteAccessApplication(context.Background(), ZoneIdentifier(testZoneID), "480f4f69-1a28-4fdd-9240-1ed29f0ac1db")
 
 	assert.NoError(t, err)
 }
@@ -382,12 +468,12 @@ func TestRevokeAccessApplicationTokens(t *testing.T) {
 	}
 
 	mux.HandleFunc("/accounts/"+testAccountID+"/access/apps/480f4f69-1a28-4fdd-9240-1ed29f0ac1db/revoke-tokens", handler)
-	err := client.RevokeAccessApplicationTokens(context.Background(), testAccountID, "480f4f69-1a28-4fdd-9240-1ed29f0ac1db")
+	err := client.RevokeAccessApplicationTokens(context.Background(), AccountIdentifier(testAccountID), "480f4f69-1a28-4fdd-9240-1ed29f0ac1db")
 
 	assert.NoError(t, err)
 
 	mux.HandleFunc("/zones/"+testZoneID+"/access/apps/480f4f69-1a28-4fdd-9240-1ed29f0ac1db/revoke-tokens", handler)
-	err = client.RevokeZoneLevelAccessApplicationTokens(context.Background(), testZoneID, "480f4f69-1a28-4fdd-9240-1ed29f0ac1db")
+	err = client.RevokeAccessApplicationTokens(context.Background(), ZoneIdentifier(testZoneID), "480f4f69-1a28-4fdd-9240-1ed29f0ac1db")
 
 	assert.NoError(t, err)
 }
@@ -451,7 +537,7 @@ func TestAccessApplicationWithCORS(t *testing.T) {
 
 	mux.HandleFunc("/accounts/"+testAccountID+"/access/apps/480f4f69-1a28-4fdd-9240-1ed29f0ac1db", handler)
 
-	actual, err := client.AccessApplication(context.Background(), testAccountID, "480f4f69-1a28-4fdd-9240-1ed29f0ac1db")
+	actual, err := client.GetAccessApplication(context.Background(), AccountIdentifier(testAccountID), "480f4f69-1a28-4fdd-9240-1ed29f0ac1db")
 
 	if assert.NoError(t, err) {
 		assert.Equal(t, want, actual)
@@ -459,7 +545,7 @@ func TestAccessApplicationWithCORS(t *testing.T) {
 
 	mux.HandleFunc("/zones/"+testZoneID+"/access/apps/480f4f69-1a28-4fdd-9240-1ed29f0ac1db", handler)
 
-	actual, err = client.ZoneLevelAccessApplication(context.Background(), testZoneID, "480f4f69-1a28-4fdd-9240-1ed29f0ac1db")
+	actual, err = client.GetAccessApplication(context.Background(), ZoneIdentifier(testZoneID), "480f4f69-1a28-4fdd-9240-1ed29f0ac1db")
 
 	if assert.NoError(t, err) {
 		assert.Equal(t, want, actual)
@@ -532,7 +618,7 @@ func TestCreatePrivateAccessApplication(t *testing.T) {
 
 	mux.HandleFunc("/accounts/"+testAccountID+"/access/apps", handler)
 
-	actual, err := client.CreateAccessApplication(context.Background(), testAccountID, AccessApplication{
+	actual, err := client.CreateAccessApplication(context.Background(), AccountIdentifier(testAccountID), CreateAccessApplicationParams{
 		Name:            "Admin Site",
 		PrivateAddress:  "198.51.100.0",
 		SessionDuration: "24h",
@@ -544,7 +630,7 @@ func TestCreatePrivateAccessApplication(t *testing.T) {
 	}
 }
 
-func TestCreateSaasAccessApplications(t *testing.T) {
+func TestCreateSAMLSaasAccessApplications(t *testing.T) {
 	setup()
 	defer teardown()
 
@@ -573,10 +659,13 @@ func TestCreateSaasAccessApplications(t *testing.T) {
 				"skip_interstitial": true,
 				"app_launcher_visible": true,
 				"service_auth_401_redirect": true,
+				"custom_non_identity_deny_url": "https://blocked.com",
+				"tags": ["engineers"],
 				"saas_app": {
 					"consumer_service_url": "https://saas.example.com",
 					"sp_entity_id": "dash.example.com",
 					"name_id_format": "id",
+					"default_relay_state": "https://saas.example.com",
 					"custom_attributes": [
 						{
 							"name": "test1",
@@ -599,7 +688,9 @@ func TestCreateSaasAccessApplications(t *testing.T) {
 								"name": "test3"
 							}
 						}
-					]
+					],
+					"name_id_transform_jsonata": "$substringBefore(email, '@') & '+sandbox@' & $substringAfter(email, '@')",
+					"saml_attribute_transform_jsonata": "$ ~>| groups | {'group_name': name} |"
 				}
 			}
 		}
@@ -628,6 +719,7 @@ func TestCreateSaasAccessApplications(t *testing.T) {
 			ConsumerServiceUrl: "https://saas.example.com",
 			SPEntityID:         "dash.example.com",
 			NameIDFormat:       "id",
+			DefaultRelayState:  "https://saas.example.com",
 			CustomAttributes: []SAMLAttributeConfig{
 				{
 					Name:       "test1",
@@ -651,14 +743,18 @@ func TestCreateSaasAccessApplications(t *testing.T) {
 					},
 				},
 			},
+			NameIDTransformJsonata:        "$substringBefore(email, '@') & '+sandbox@' & $substringAfter(email, '@')",
+			SamlAttributeTransformJsonata: "$ ~>| groups | {'group_name': name} |",
 		},
-		CreatedAt: &createdAt,
-		UpdatedAt: &updatedAt,
+		CreatedAt:                &createdAt,
+		UpdatedAt:                &updatedAt,
+		CustomNonIdentityDenyURL: "https://blocked.com",
+		Tags:                     []string{"engineers"},
 	}
 
 	mux.HandleFunc("/accounts/"+testAccountID+"/access/apps", handler)
 
-	actual, err := client.CreateAccessApplication(context.Background(), testAccountID, AccessApplication{
+	actual, err := client.CreateAccessApplication(context.Background(), AccountIdentifier(testAccountID), CreateAccessApplicationParams{
 		Name: "Admin Saas Site",
 		SaasApplication: &SaasApplication{
 			ConsumerServiceUrl: "https://examplesaas.com",
@@ -674,7 +770,7 @@ func TestCreateSaasAccessApplications(t *testing.T) {
 
 	mux.HandleFunc("/zones/"+testZoneID+"/access/apps", handler)
 
-	actual, err = client.CreateZoneLevelAccessApplication(context.Background(), testZoneID, AccessApplication{
+	actual, err = client.CreateAccessApplication(context.Background(), ZoneIdentifier(testZoneID), CreateAccessApplicationParams{
 		Name: "Admin Saas Site",
 		SaasApplication: &SaasApplication{
 			ConsumerServiceUrl: "https://saas.example.com",
@@ -682,6 +778,235 @@ func TestCreateSaasAccessApplications(t *testing.T) {
 			NameIDFormat:       "id",
 		},
 		SessionDuration: "24h",
+	})
+
+	if assert.NoError(t, err) {
+		assert.Equal(t, fullAccessApplication, actual)
+	}
+}
+
+func TestCreateOIDCSaasAccessApplications(t *testing.T) {
+	setup()
+	defer teardown()
+
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodPost, r.Method, "Expected method 'POST', got %s", r.Method)
+		w.Header().Set("content-type", "application/json")
+		fmt.Fprintf(w, `{
+			"success": true,
+			"errors": [],
+			"messages": [],
+			"result": {
+				"id": "480f4f69-1a28-4fdd-9240-1ed29f0ac1db",
+				"created_at": "2014-01-01T05:20:00.12345Z",
+				"updated_at": "2014-01-01T05:20:00.12345Z",
+				"aud": "737646a56ab1df6ec9bddc7e5ca84eaf3b0768850f3ffb5d74f1534911fe3893",
+				"name": "Admin OIDC Saas App",
+				"domain": "example.cloudflareaccess.com/cdn-cgi/access/sso/oidc/737646a56ab1df6ec9bddc7e5ca84eaf3b0768850f3ffb5d74f1534911fe3893",
+				"type": "saas",
+				"session_duration": "24h",
+				"allowed_idps": [],
+				"auto_redirect_to_identity": false,
+				"enable_binding_cookie": false,
+				"custom_deny_url": "https://www.example.com",
+				"custom_deny_message": "denied!",
+				"logo_url": "https://www.example.com/example.png",
+				"skip_interstitial": true,
+				"app_launcher_visible": true,
+				"service_auth_401_redirect": true,
+				"custom_non_identity_deny_url": "https://blocked.com",
+				"tags": ["engineers"],
+				"saas_app": {
+					"auth_type": "oidc",
+					"client_id": "737646a56ab1df6ec9bddc7e5ca84eaf3b0768850f3ffb5d74f1534911fe3893",
+					"client_secret": "secret",
+					"redirect_uris": ["https://saas.example.com"],
+					"grant_types": ["authorization_code"],
+					"scopes": ["openid", "email", "profile", "groups"],
+					"app_launcher_url": "https://saas.example.com",
+					"group_filter_regex": ".*"
+				}
+			}
+		}
+		`)
+	}
+
+	createdAt, _ := time.Parse(time.RFC3339, "2014-01-01T05:20:00.12345Z")
+	updatedAt, _ := time.Parse(time.RFC3339, "2014-01-01T05:20:00.12345Z")
+	fullAccessApplication := AccessApplication{
+		ID:                     "480f4f69-1a28-4fdd-9240-1ed29f0ac1db",
+		Name:                   "Admin OIDC Saas App",
+		Domain:                 "example.cloudflareaccess.com/cdn-cgi/access/sso/oidc/737646a56ab1df6ec9bddc7e5ca84eaf3b0768850f3ffb5d74f1534911fe3893",
+		Type:                   "saas",
+		SessionDuration:        "24h",
+		AUD:                    "737646a56ab1df6ec9bddc7e5ca84eaf3b0768850f3ffb5d74f1534911fe3893",
+		AllowedIdps:            []string{},
+		AutoRedirectToIdentity: BoolPtr(false),
+		EnableBindingCookie:    BoolPtr(false),
+		AppLauncherVisible:     BoolPtr(true),
+		ServiceAuth401Redirect: BoolPtr(true),
+		CustomDenyMessage:      "denied!",
+		CustomDenyURL:          "https://www.example.com",
+		LogoURL:                "https://www.example.com/example.png",
+		SkipInterstitial:       BoolPtr(true),
+		SaasApplication: &SaasApplication{
+			AuthType:         "oidc",
+			ClientID:         "737646a56ab1df6ec9bddc7e5ca84eaf3b0768850f3ffb5d74f1534911fe3893",
+			ClientSecret:     "secret",
+			RedirectURIs:     []string{"https://saas.example.com"},
+			GrantTypes:       []string{"authorization_code"},
+			Scopes:           []string{"openid", "email", "profile", "groups"},
+			AppLauncherURL:   "https://saas.example.com",
+			GroupFilterRegex: ".*",
+		},
+		CreatedAt:                &createdAt,
+		UpdatedAt:                &updatedAt,
+		CustomNonIdentityDenyURL: "https://blocked.com",
+		Tags:                     []string{"engineers"},
+	}
+
+	mux.HandleFunc("/accounts/"+testAccountID+"/access/apps", handler)
+
+	actual, err := client.CreateAccessApplication(context.Background(), AccountIdentifier(testAccountID), CreateAccessApplicationParams{
+		Name: "Admin Saas Site",
+		SaasApplication: &SaasApplication{
+			AuthType:         "oidc",
+			RedirectURIs:     []string{"https://saas.example.com"},
+			AppLauncherURL:   "https://saas.example.com",
+			GroupFilterRegex: ".*",
+		},
+		SessionDuration: "24h",
+	})
+
+	if assert.NoError(t, err) {
+		assert.Equal(t, fullAccessApplication, actual)
+	}
+
+	mux.HandleFunc("/zones/"+testZoneID+"/access/apps", handler)
+
+	actual, err = client.CreateAccessApplication(context.Background(), ZoneIdentifier(testZoneID), CreateAccessApplicationParams{
+		Name: "Admin Saas Site",
+		SaasApplication: &SaasApplication{
+			AuthType:         "oidc",
+			RedirectURIs:     []string{"https://saas.example.com"},
+			AppLauncherURL:   "https://saas.example.com",
+			GroupFilterRegex: ".*",
+		},
+		SessionDuration: "24h",
+	})
+
+	if assert.NoError(t, err) {
+		assert.Equal(t, fullAccessApplication, actual)
+	}
+}
+
+func TestCreateApplicationWithAccessAppLauncherCustomization(t *testing.T) {
+	setup()
+	defer teardown()
+
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodPost, r.Method, "Expected method 'POST', got %s", r.Method)
+		w.Header().Set("content-type", "application/json")
+		fmt.Fprintf(w, `{
+			"success": true,
+			"errors": [],
+			"messages": [],
+			"result": {
+				"id": "480f4f69-1a28-4fdd-9240-1ed29f0ac1db",
+				"created_at": "2014-01-01T05:20:00.12345Z",
+				"updated_at": "2014-01-01T05:20:00.12345Z",
+				"aud": "737646a56ab1df6ec9bddc7e5ca84eaf3b0768850f3ffb5d74f1534911fe3893",
+				"name": "App Launcher",
+				"type": "app_launcher",
+				"session_duration": "24h",
+				"auto_redirect_to_identity": false,
+				"enable_binding_cookie": false,
+				"custom_deny_url": "https://www.example.com",
+				"custom_deny_message": "denied!",
+				"logo_url": "https://www.example.com/example.png",
+				"skip_interstitial": true,
+				"app_launcher_visible": false,
+				"service_auth_401_redirect": false,
+				"landing_page_design": {
+					"title": "A title",
+					"message": "a message",
+					"image_url": "https://www.example.com/example.png",
+					"button_color": "green",
+					"button_text_color": "red"
+				},
+				"header_bg_color": "red",
+				"bg_color": "blue",
+				"footer_links": [
+					{
+						"url": "https://somesite.com",
+						"name": "bug"
+					}
+				]
+			}
+		}
+		`)
+	}
+
+	createdAt, _ := time.Parse(time.RFC3339, "2014-01-01T05:20:00.12345Z")
+	updatedAt, _ := time.Parse(time.RFC3339, "2014-01-01T05:20:00.12345Z")
+	fullAccessApplication := AccessApplication{
+		ID:                     "480f4f69-1a28-4fdd-9240-1ed29f0ac1db",
+		Name:                   "App Launcher",
+		Type:                   "app_launcher",
+		SessionDuration:        "24h",
+		AUD:                    "737646a56ab1df6ec9bddc7e5ca84eaf3b0768850f3ffb5d74f1534911fe3893",
+		AutoRedirectToIdentity: BoolPtr(false),
+		EnableBindingCookie:    BoolPtr(false),
+		AppLauncherVisible:     BoolPtr(false),
+		ServiceAuth401Redirect: BoolPtr(false),
+		CustomDenyMessage:      "denied!",
+		CustomDenyURL:          "https://www.example.com",
+		LogoURL:                "https://www.example.com/example.png",
+		SkipInterstitial:       BoolPtr(true),
+		CreatedAt:              &createdAt,
+		UpdatedAt:              &updatedAt,
+		AccessAppLauncherCustomization: AccessAppLauncherCustomization{
+			LandingPageDesign: AccessLandingPageDesign{
+				Title:           "A title",
+				Message:         "a message",
+				ImageURL:        "https://www.example.com/example.png",
+				ButtonColor:     "green",
+				ButtonTextColor: "red",
+			},
+			HeaderBackgroundColor: "red",
+			BackgroundColor:       "blue",
+			FooterLinks: []AccessFooterLink{
+				{
+					URL:  "https://somesite.com",
+					Name: "bug",
+				},
+			},
+		},
+	}
+
+	mux.HandleFunc("/accounts/"+testAccountID+"/access/apps", handler)
+
+	actual, err := client.CreateAccessApplication(context.Background(), AccountIdentifier(testAccountID), CreateAccessApplicationParams{
+		Name:            "Admin Site",
+		SessionDuration: "24h",
+		Type:            "app_launcher",
+		AccessAppLauncherCustomization: AccessAppLauncherCustomization{
+			LandingPageDesign: AccessLandingPageDesign{
+				Title:           "A title",
+				Message:         "a message",
+				ImageURL:        "https://www.example.com/example.png",
+				ButtonColor:     "green",
+				ButtonTextColor: "red",
+			},
+			HeaderBackgroundColor: "red",
+			BackgroundColor:       "blue",
+			FooterLinks: []AccessFooterLink{
+				{
+					URL:  "https://somesite.com",
+					Name: "bug",
+				},
+			},
+		},
 	})
 
 	if assert.NoError(t, err) {
